@@ -1,0 +1,532 @@
+# CLI reference
+
+The `agentnotify` command-line client talks to the local AgentNotify broker over HTTP. Broker `/v1`
+commands require a running broker and valid bearer token; `health` can use an unauthenticated probe,
+and `ui` opens the local browser interface without sending a token. `token` reads local configuration.
+Relay commands talk to the configured Relay and local protected provider store.
+
+Binary name:
+
+- `agentnotify.exe` on Windows (`%LOCALAPPDATA%\Programs\AgentNotify\agentnotify.exe` after installation, added to the current user's `PATH`).
+- Reachable from WSL as `agentnotify.exe`. After installation open a new WSL shell so the updated Windows `PATH` is imported.
+- `agentnotify` on macOS and Linux, installed alongside the headless `agentnotifyd` broker.
+
+Source: `src/AgentNotify.Cli/Program.cs`.
+
+---
+
+## Invocation
+
+```text
+agentnotify <command> [options]
+agentnotify "Title" ["Message"] [options] shorthand for send
+agentnotify --help | -h | help [<command>]
+agentnotify --version
+```
+
+When no command is given the usage text is printed and the process exits `0`. Known commands include
+`send`, `list`, `get`, `resolve`, `dismiss`, `health`, `relay`, `token`, `router`, `ui`, `interactions`,
+`install-skill`, `install-harness`, `install`, `help`, and `--version`. An unknown first argument is
+treated as a positional `send` invocation.
+
+All commands that contact the broker use a 10-second HTTP timeout. Connection failure prints to stderr and exits non-zero (see Exit codes).
+
+---
+
+## Common options
+
+`--port` and `--token` are accepted by every broker command. They override file and environment discovery for a single invocation.
+
+| Flag | Short | Value | Required | Default |
+|------|-------|-------|----------|---------|
+| `--port` | — | integer | no | `47821` from the platform data directory's `config.json` `port`, or `AGENTNOTIFY_PORT` when `ConfigStore` is constructed with environment overrides |
+| `--token` | — | string | no | `authToken` from the same config file, or `AGENTNOTIFY_TOKEN` (see Authentication) |
+
+Token resolution for broker calls (`src/AgentNotify.Cli/Program.cs`):
+
+1. `--token` when supplied.
+2. `AGENTNOTIFY_TOKEN` environment variable when `ConfigStore(applyEnvOverrides: true)` is used.
+3. `authToken` from the platform data directory's `config.json`.
+
+If no token is available a warning is written to stderr but the request is still sent; the broker replies `401`.
+
+Base URL is `http://127.0.0.1:{port}`.
+
+`--help` / `-h` on `send` and `list` prints command help and exits `0`.
+
+---
+
+## Value parsing
+
+### Type identifiers
+
+`--type` values are normalized by `AgentNotify.Protocol.NotificationTypes.Normalize` (`src/AgentNotify.Protocol/NotificationTypes.cs`):
+
+- Trim, replace `-` with `_`, lower-case.
+- Map `inputrequired` to `input_required` and `permissionrequired` to `permission_required`.
+- Accept only `^[a-z][a-z0-9_]{0,63}$` (1–64 characters, starting with a letter). Otherwise `--type` fails with: `--type must be a valid identifier containing letters, numbers, underscores, or hyphens (maximum 64 characters).`
+
+Built-in IDs: `info`, `success`, `warning`, `error`, `input_required`, `permission_required`, `completed`, `blocked`. Custom IDs use the same rule; hyphen and underscore spellings are equivalent.
+
+### Priority and status enums
+
+Enum flags use `Program.TryParseEnum` (`src/AgentNotify.Cli/Program.cs`):
+
+```text
+value.Replace('-', '_').Replace("_","") then Enum.TryParse(ignoreCase:true)
+```
+
+That makes `high`, `HIGH`, `high-priority` styles accepted as long as letters match. `status` filtering on `list` uses the same normalization in `src/AgentNotify.Api/ApiHost.cs`.
+
+Valid priorities for `--priority`: `low`, `normal`, `high`, `critical`. On failure: `--priority must be low, normal, high, or critical.`
+
+Valid statuses: `active`, `dismissed`, `resolved` (see `src/AgentNotify.Protocol/NotificationStatus.cs`).
+
+---
+
+## Commands
+
+### `send` — create a notification
+
+Creates a notification or, when `key` matches an active notification, updates it in place.
+
+```text
+agentnotify send --title T --message M [options]
+agentnotify "Title" ["Message"] [options]
+agentnotify --title T --msg M [options]
+```
+
+| Flag | Value | Required | Default | Notes |
+|------|-------|----------|---------|-------|
+| `--title` | text | yes (or first positional) | — | Trimmed, 1–200 characters |
+| `--message` / `--msg` | text | yes (or second positional) | — | Trimmed, 1–4000 characters |
+| `--type` | identifier | no | `info` | Normalized as above |
+| `--priority` | enum | no | type default or `normal` | `low`/`normal`/`high`/`critical` |
+| `--agent` | string | no | `AGENTNOTIFY_AGENT` or `cli` | Trimmed, max 100 |
+| `--agent-instance` | string | no | — | Trimmed, max 100 |
+| `--project` | string | no | — | Trimmed, max 200 |
+| `--key` | string | no | — | Trimmed, max 100; triggers deduplication |
+| `--cwd` | path | no | `Directory.GetCurrentDirectory()` | Trimmed, max 1024 |
+| `--pid` | integer | no | — | Parsed with `long.TryParse`; invalid value becomes absent |
+| `--port` | integer | no | `47821` | As above |
+| `--token` | string | no | file/env | As above |
+
+Positional shorthand (`src/AgentNotify.Cli/Program.cs`):
+
+- First positional sets `--title` when `--title` was not supplied.
+- Second positional sets `--message` when `--message` was not supplied.
+- A single positional sets both title and message to the same value.
+
+Other behavior:
+
+- `agent` defaults to `AGENTNOTIFY_AGENT` or `cli`. `cwd` defaults to the current directory (failure to read returns no value).
+- Unknown `send` flags produce `unknown option '<flag>' for send. Run 'agentnotify help send'.`
+
+Output: on success the broker returns `201` with a `NotificationDto`; the CLI pretty-prints the JSON with indentation to stdout. On failure it prints `Error {code} {Status}: {error}` to stderr where `{error}` is the broker's `{ "error": "..." }` field or the raw body.
+
+Examples:
+
+```bash
+# Explicit flags
+agentnotify.exe send --title "Build done" --message "All tests passed" --type success
+
+# Positional shorthand
+agentnotify.exe "Need input" "Which branch should I use?" --type input_required --key my-task
+
+# With metadata derived from environment
+AGENTNOTIFY_AGENT=opencode agentnotify.exe send --title "Task blocked" --message "Missing SDK" --type blocked --priority high --project myrepo --key build-42
+```
+
+### `list` — list notifications
+
+```text
+agentnotify list [options]
+```
+
+| Flag | Value | Required | Default | Notes |
+|------|-------|----------|---------|-------|
+| `--unresolved` | `true`/`false` or no value | no | not filtered | Bare `--unresolved` means `true`. With a value, parsed by `bool.TryParse` |
+| `--type` | identifier | no | — | Exact normalized type filter |
+| `--status` | enum | no | — | `active`/`dismissed`/`resolved` (overridden by `--unresolved true`) |
+| `--project` | string | no | — | Exact trimmed match |
+| `--agent` | string | no | — | Exact trimmed match |
+| `--limit` | integer | no | `20` | Parsed by `int.TryParse`; server clamps `1–500` (default `100` when absent) |
+| `--json` | — | no | `false` | When present, output raw JSON instead of table |
+| `--port` | integer | no | `47821` | As above |
+| `--token` | string | no | file/env | As above |
+
+Unknown flags produce `unknown option '<flag>' for list.`
+
+Output:
+
+- Without `--json`: zero or more lines `"{id} [{type}/{priority}] {status} {title} ({agent})"` or `(no notifications)`.
+- With `--json`: pretty-printed JSON array `NotificationDto[]`.
+- On HTTP error: `Error {code} {Status}: {error}` to stderr.
+
+Examples:
+
+```bash
+agentnotify.exe list --unresolved --limit 20
+agentnotify.exe list --type error --status active --json
+agentnotify.exe list --project myrepo --agent opencode --limit 50
+```
+
+### `get` — fetch one notification by id
+
+```text
+agentnotify get <id> [--port N] [--token T]
+```
+
+- `<id>` is required and must not start with `-`. Otherwise: `get requires an <id>. Usage: agentnotify get <id>`.
+- Only `--port` and `--token` are accepted after the id.
+
+Output: pretty-printed `NotificationDto` on success. On failure `Error {code} {Status}: {error}` to stderr.
+
+Example:
+
+```bash
+agentnotify.exe get 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
+```
+
+### `resolve` — mark a notification resolved
+
+```text
+agentnotify resolve <id> [--port N] [--token T]
+```
+
+- `<id>` required; same validation as `get`.
+- Implemented as `PATCH /v1/notifications/{id}` with `{ "status": "resolved" }` (`src/AgentNotify.Cli/Program.cs`).
+
+Output: pretty-printed updated `NotificationDto` on success.
+
+Example:
+
+```bash
+agentnotify.exe resolve 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
+```
+
+### `dismiss` — dismiss a notification
+
+```text
+agentnotify dismiss <id> [--port N] [--token T]
+```
+
+- `<id>` required.
+- Tries `POST /v1/notifications/{id}/dismiss`; on `404` falls back to `PATCH` with `dismissed` (`src/AgentNotify.Cli/Program.cs`).
+
+Output: pretty-printed updated `NotificationDto` on success.
+
+Example:
+
+```bash
+agentnotify.exe dismiss 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
+```
+
+### `health` — check broker health
+
+```text
+agentnotify health [--port N] [--token T]
+```
+
+Authentication detection (`src/AgentNotify.Cli/Program.cs`):
+
+- `wantAuth` is true when `--token` is supplied or a token file exists (`ConfigStore(applyEnvOverrides: false).Load().AuthToken` is non-empty).
+- When `wantAuth` is true the CLI calls `GET /v1/health` (authenticated). On `401` it falls back to `GET /health` and prints the unauthenticated body.
+- When `wantAuth` is false it calls `GET /health` directly.
+
+Output:
+
+- Success: pretty-printed JSON. Authenticated shape is `HealthResponse` (`status`, `version`, `pid`, `uptimeSeconds`, `activeCount`, `apiVersion`, `serverTimeUtc`). Unauthenticated shape is `{ "status": "ok" }`.
+- On `HttpRequestException`: `Could not reach AgentNotify at http://127.0.0.1:{port}: {message}` plus `Is the app running? Check the tray icon.` to stderr.
+
+Example:
+
+```bash
+agentnotify.exe health
+agentnotify.exe health --port 47821 --token "$TOKEN"
+```
+
+### `token` — print the local bearer token
+
+```text
+agentnotify token
+```
+
+Reads `ConfigStore().Load()` (the platform data directory's `config.json`). On success prints the token to stdout with no additional formatting. Failures:
+
+- `No token found. Has AgentNotify run at least once? Look at: {ConfigPath}` to stderr.
+- Any exception message to stderr.
+
+Example:
+
+```bash
+TOKEN="$(agentnotify.exe token)"
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:47821/v1/health
+```
+
+### `relay` — pair and verify Relay providers
+
+```text
+agentnotify relay pair --url URL [--name NAME] [--sender-name NAME] [--allow-private] [--json]
+agentnotify relay status [--json]
+```
+
+`relay pair` uses the same device-authorization client as the Windows Settings panel. It validates
+the base URL, checks `/.well-known/agentnotify-relay` for API `v1`, creates a sender pairing request,
+prints the verification URL and short code, polls until approval, verifies the returned installation,
+and writes the provider configuration and credential together through `ProviderProfileService`.
+The credential is never printed. A matching Relay URL updates its existing profile; a new profile is
+created disabled so delivery remains opt-in.
+
+| Flag | Value | Default | Notes |
+| --- | --- | --- | --- |
+| `--url` | absolute URL | — | Required; HTTPS except HTTP localhost development |
+| `--name` | text | verified Relay/display name | Provider profile name, at most 100 characters |
+| `--sender-name` | text | machine name | Label visible to the Relay and paired devices |
+| `--allow-private` | — | false | Explicit consent for private/loopback destinations; required for HTTP localhost |
+| `--json` | — | false | Writes one compact JSON object per state transition to stdout |
+
+Plain output writes the verification URL and code to stdout and countdown updates to stderr. Press
+Ctrl+C to cancel. Polling honors Relay `slow_down`, tolerates four consecutive transient network
+failures, and stops on rejection, expiry, consumption, invalid authentication, or cancellation.
+
+`relay status` loads every saved Relay provider and verifies its protected credential through
+`GET /v1/installation`. It never displays the credential. Without `--json`, each line reports the
+profile name, connection state, verified installation display name/ID, and whether the provider is
+disabled. With `--json`, it emits one object per profile.
+
+Examples:
+
+```bash
+agentnotify relay pair --url https://relay.example.com --name "Home relay"
+agentnotify relay pair --url http://localhost:4000 --allow-private --json
+agentnotify relay status
+```
+
+### `router` — the local provider router
+
+```text
+agentnotify router status
+agentnotify router key
+agentnotify router agents
+agentnotify router connect <codex|claude_code> [--model <selector>]
+agentnotify router disconnect <codex|claude_code>
+```
+
+`status` and `key` read the local configuration file directly, like `token`, and make no network
+call. `agents`, `connect`, and `disconnect` ask the running broker, because it owns the router key and
+the generated model catalogue; they fail with a clear message when AgentNotify is not running.
+
+`router connect` writes the agent's own configuration so its model picker lists every routed model,
+after copying the file. `--model` picks the selector it starts on (a route name, `combo/<name>`, or
+`provider/model`); without it the first selectable model is used. Subagent, review, and effort
+settings are on the web interface's Model router → Agents page. `router disconnect` puts the agent's
+own settings back.
+
+`router key` prints the key an agent authenticates to the router with, as
+`Authorization: Bearer <key>` or `x-api-key: <key>`. When the router has never been turned on there
+is no key: the command writes an explanation to stderr and exits non-zero.
+
+`router status` prints whether the router is on and the two base URLs to configure an agent with —
+`/router/v1` for Codex and other OpenAI-compatible clients, and `/router` for Claude Code, which
+appends `/v1/messages` itself.
+
+```bash
+export ANTHROPIC_BASE_URL=http://127.0.0.1:47821/router
+export ANTHROPIC_CUSTOM_HEADERS="x-agentnotify-router-key: $(agentnotify router key)"
+```
+
+### `install-skill` — install the bundled agent skill
+
+```text
+agentnotify install-skill <codex|claude|opencode> [options]
+agentnotify install skill <codex|claude|opencode> [options]
+```
+
+The skill payload is embedded in the CLI, so installation is offline and needs no npm, Python, or
+separate download.
+
+| Flag | Value | Default | Notes |
+| --- | --- | --- | --- |
+| `--scope` | `user` or `project` | `user` | Select personal or current-repository discovery |
+| `--path` | directory | agent-specific skills root | Overrides `--scope`; the `agentnotify` folder is created beneath it |
+| `--wsl` | distribution | the calling distribution, via the WSL wrapper | Windows only. Installs into the default user's home in that running WSL distribution; cannot be combined with `--path` or `--scope project` |
+| `--force` | — | false | Replaces changed AgentNotify-owned files after explicit review |
+| `--dry-run` | — | false | Reports the destination without writing |
+
+Default personal destinations:
+
+```text
+Codex:       ~/.agents/skills/agentnotify
+Claude Code: ~/.claude/skills/agentnotify
+OpenCode:    ~/.config/opencode/skill/agentnotify
+```
+
+Codex installs `SKILL.md` and `agents/openai.yaml`; Claude Code and OpenCode install `SKILL.md`.
+Any other agent is installed by passing its skills root to `--path`. Identical files
+are treated as already up to date. A changed existing file is never overwritten unless `--force` is
+passed. Files outside the `agentnotify` skill directory are never modified.
+
+Examples:
+
+```bash
+agentnotify install-skill codex
+agentnotify install-skill claude --scope project
+agentnotify install-skill codex --dry-run
+agentnotify install-skill codex --path /custom/skills/root
+agentnotify.exe install-skill claude --wsl Ubuntu-20.04
+```
+
+A Windows CLI started through `scripts/agentnotify` inside WSL receives `WSL_DISTRO_NAME` and uses
+that distribution's home unless `--path` or `--scope project` is given. `install-harness` has no WSL
+target and warns when started from WSL.
+
+### `install-harness` — install the auto-notify harness
+
+```text
+agentnotify install-harness <agent> [options]
+agentnotify install harness <agent> [options]
+```
+
+Agents: opencode, codex, claude, gemini, copilot, cursor, muse, kilo,
+openclaw, hermes, pi.
+
+The harness payload is embedded in the CLI, so installation is offline.
+Unlike the skill, which relies on the model remembering to call
+AgentNotify, the harness hooks the host itself: permission prompts,
+questions, session completion, and session errors send automatically.
+Hooks are notify-only — they always exit `0` and never approve, deny, or
+block. See [HARNESS.md](HARNESS.md).
+
+| Flag | Value | Default | Notes |
+| --- | --- | --- | --- |
+| `--scope` | `user` or `project` | `user` | Select personal or current-repository hooks |
+| `--path` | directory | host-specific harness dir | Overrides `--scope`; OpenCode takes the plugin directory itself, Codex/Claude take the `.codex`/`.claude` directory |
+| `--force` | — | false | Replaces changed harness files; rewrites invalid hook JSON |
+| `--dry-run` | — | false | Reports the destination without writing |
+| `--ask` | — | false | Codex/Claude only: permission prompts wait for a broker answer and return it (verified schemas); without `--ask` they only notify |
+
+Default personal destinations:
+
+```text
+OpenCode:    ~/.config/opencode/plugins/agentnotify.js
+Codex:       ~/.codex/agentnotify/agentnotify_hook.py + ~/.codex/hooks.json
+Claude Code: ~/.claude/agentnotify/agentnotify_hook.py + ~/.claude/settings.json
+Gemini CLI:  ~/.gemini/agentnotify/agentnotify_hook.py + ~/.gemini/settings.json
+Copilot CLI: ~/.copilot/agentnotify/agentnotify_hook.py + ~/.copilot/hooks/agentnotify.json
+Cursor:      ~/.cursor/agentnotify/agentnotify_hook.py + ~/.cursor/hooks.json
+Muse Code:   ~/.config/muse/agentnotify/agentnotify_hook.py + ~/.config/muse/settings.json
+Kilo Code:   ~/.config/kilo/plugin/agentnotify.js
+OpenClaw:    ~/.openclaw/agentnotify/agentnotify_openclaw.py (watch daemon)
+Hermes:      ~/.hermes/plugins/agentnotify/ + config.yaml consent steps
+Pi:          ~/.pi/agent/extensions/agentnotify.ts
+```
+
+Existing hook entries are preserved and reinstalling never duplicates the
+AgentNotify entries. Restart the host session after installing.
+
+Examples:
+
+```bash
+agentnotify install-harness opencode
+agentnotify install-harness codex --scope project
+agentnotify install-harness claude --dry-run
+```
+
+### `ui` — open the web interface
+
+```bash
+agentnotify ui [--print] [--port N]
+```
+
+Opens `http://127.0.0.1:<port>/ui/` in the default browser. No sign-in or token is involved.
+`--print` writes the address instead, for machines without a display. Exits `1` when the broker is
+unreachable or predates the web interface. See
+[WEB_UI.md](WEB_UI.md).
+
+### `interactions` — ask a waiting question and collect the answer
+
+```text
+agentnotify interactions request --prompt TEXT [options]
+agentnotify interactions list [--pending] [--status STATUS] [--agent A] [--project P] [--session S] [--limit N] [--json]
+agentnotify interactions get <id>
+agentnotify interactions wait <id> [--timeout SECONDS]
+agentnotify interactions respond <id> --response-id R --digest D --nonce N [--choice C | --text T] [--source S] [--device D]
+agentnotify interactions cancel <id>
+agentnotify interactions publish <id>
+agentnotify interactions poll-responses [--provider ID] [--json]
+```
+
+Opens a durable interaction (permission, single choice, or bounded text) and
+collects the first valid answer. Repeated `--key` reuses the pending
+interaction; a changed question supersedes it. `request` prints the full
+interaction JSON including `request_digest` and `nonce`. `wait` blocks until
+the interaction settles or `--timeout` (1–300 s, default 60) and always prints
+the current state. `respond` needs the digest and nonce from `get`, plus exactly one of
+`--choice` / `--text`; a repeated `--response-id` replays the original
+outcome, a new one after an answer is a `409`. See
+[INTERACTIONS.md](INTERACTIONS.md).
+
+Examples:
+
+```bash
+agentnotify interactions request --kind permission --prompt "Deploy to prod?" \
+  --choice allow-once:"Allow once" --choice deny:"Deny" --agent codex --project shop
+agentnotify interactions list --pending
+agentnotify interactions wait abc123 --timeout 120
+agentnotify interactions respond abc123 --response-id r1 --digest <digest> --nonce <nonce> --choice deny
+agentnotify interactions publish abc123
+agentnotify interactions poll-responses
+```
+
+`publish` re-sends one question to Relay-enabled routes (requests
+auto-publish on creation). `poll-responses` pulls mobile answers from every
+enabled Relay provider into the broker; the running broker already polls
+continuously, so this command is for diagnostics or a manual catch-up. See
+[RELAY_INTERACTIONS.md](RELAY_INTERACTIONS.md).
+
+### `help` and `--version`
+
+```text
+agentnotify help [send|list|get|resolve|dismiss|relay|install-skill|install-harness|interactions]
+agentnotify --help
+agentnotify -h
+agentnotify --version
+```
+
+- `help <topic>` prints the topic help (`send`, `list`, `get`, `resolve`, `dismiss`, `relay`, `install-skill`, `install-harness`, `interactions`). Unknown topic prints the general usage.
+- `help` with no topic prints general usage (`PrintUsage`).
+- `--version` (`RunVersion`) prints `agentnotify {InformationalVersion}` derived from the CLI assembly.
+
+---
+
+## Exit codes
+
+| Code | Meaning | When |
+|------|---------|------|
+| `0` | Success | Command completed; also returned when no arguments are given (usage printed) or `--help`/`--version` was requested |
+| `1` | General failure | Validation error, unknown option, missing required argument, connection failure, request timeout, or any HTTP error not covered below |
+| `2` | Authentication failure | `send` received `401` or `403` (`HandleCreateResponse` maps 401/403 to `2`) |
+| `3` | Not found | `get`, `resolve`, or `dismiss`/`PATCH` returned `404` |
+
+Additional failure messages written to stderr:
+
+- `Could not reach AgentNotify: {message}` / `Is the tray app running?` on `HttpRequestException` (top-level catch, `src/AgentNotify.Cli/Program.cs`).
+- `AgentNotify did not respond before the request timed out.` on `TaskCanceledException`.
+- `Could not reach AgentNotify at {baseUrl}: {message}` / `Is the app running? Check the tray icon.` for `health`.
+
+---
+
+## Environment variables
+
+| Variable | Used by | Effect |
+|----------|---------|--------|
+| `AGENTNOTIFY_AGENT` | `send` | Default for `--agent` when the flag is absent |
+| `AGENTNOTIFY_PORT` | all broker commands | Overrides `port` from `config.json` (`ConfigStore.cs`) |
+| `AGENTNOTIFY_TOKEN` | all broker commands | Overrides `authToken` from `config.json` (`ConfigStore.cs`) |
+
+---
+
+## Error payload
+
+Broker errors are JSON `{ "error": "<message>" }`. The CLI extracts the `error` field for the `Error {code} {Status}: {message}` line; otherwise it prints the raw body or `(empty response)`.

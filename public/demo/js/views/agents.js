@@ -1,0 +1,125 @@
+import { api } from "../api.js";
+import { h, mount, clear, pageHead, badge, button, busy, toast, card, notice, codeLine, confirmDialog } from "../dom.js";
+
+const STATE = {
+  up_to_date: ["Installed", "ok"],
+  outdated: ["Different version", "warn"],
+  not_installed: ["Not installed", null],
+  unavailable: ["No home folder", "danger"],
+};
+
+export default {
+  async render(page) {
+    const draw = (data) => {
+      const skills = data.skills.map((skill) => {
+        const [label, tone] = STATE[skill.state] || [skill.state, null];
+        const action = button(skill.state === "up_to_date" ? "Up to date" : skill.state === "outdated" ? "Update" : "Install",
+          { variant: skill.state === "up_to_date" ? null : "primary", size: "sm", disabled: skill.state === "unavailable" || skill.state === "up_to_date" });
+        action.addEventListener("click", () => busy(action, async () => {
+          const install = (force) => api.post(`agents/skills/${encodeURIComponent(skill.id)}`, { force, wsl: skill.wsl });
+          try {
+            const result = await install(false);
+            toast(result.message || `${skill.display_name} skill installed.`);
+          } catch (error) {
+            if (error.status !== 409) { toast(error.message, "error"); return; }
+            const replace = await confirmDialog({
+              title: `Replace ${skill.display_name}'s skill?`,
+              message: "The installed copy differs from the one this build carries, perhaps because someone edited it. Replacing it discards those edits.",
+              confirmLabel: "Replace",
+              danger: true,
+            });
+            if (!replace) return;
+            try {
+              const result = await install(true);
+              toast(result.message || "Skill replaced.");
+            } catch (e) {
+              toast(e.message, "error");
+              return;
+            }
+          }
+          draw(await api.get("agents"));
+        }));
+        return h("div", { class: "list-item", role: "listitem" },
+          h("div", { class: "list-main" },
+            h("div", { class: "row" }, h("strong", { text: skill.display_name }),
+              skill.environment ? badge(skill.environment, "info") : null, badge(label, tone)),
+            h("div", { class: "small muted", text: skill.note }),
+            skill.destination ? h("div", { class: "small mono truncate", title: skill.destination, text: skill.destination }) : null),
+          action);
+      });
+
+      // One card per Codex and Claude Code account: the same accounts Live quota monitors.
+      const accounts = (data.accounts || []).map((account) => {
+        const [label, tone] = STATE[account.skill.state] || [account.skill.state, null];
+        const install = button(account.skill.state === "up_to_date" ? "Up to date" : account.skill.state === "outdated" ? "Update skill" : "Install skill",
+          { variant: account.skill.state === "up_to_date" ? null : "primary", size: "sm", disabled: account.skill.state !== "not_installed" && account.skill.state !== "outdated" });
+        install.addEventListener("click", () => busy(install, async () => {
+          const send = (force) => api.post(`agents/skills/${encodeURIComponent(account.skill.id)}`, { force, account: account.id });
+          try {
+            const result = await send(false);
+            toast(result.message || "Skill installed.");
+          } catch (error) {
+            if (error.status !== 409) { toast(error.message, "error"); return; }
+            const replace = await confirmDialog({
+              title: "Replace this skill?",
+              message: "The installed copy differs from the one this build carries, perhaps because someone edited it. Replacing it discards those edits.",
+              confirmLabel: "Replace",
+              danger: true,
+            });
+            if (!replace) return;
+            try { toast((await send(true)).message || "Skill replaced."); } catch (e) { toast(e.message, "error"); return; }
+          }
+          draw(await api.get("agents"));
+        }));
+        return h("section", { class: "card agent-account" },
+          h("div", { class: "row-between" },
+            h("div", null,
+              h("span", { class: "eyebrow", text: account.display_name }),
+              h("h2", { class: "quota-account-name", text: account.label })),
+            h("div", { class: "row" },
+              badge(`Skill: ${label}`, tone),
+              account.harness.installed ? badge("Harness installed", "ok") : badge("No harness", null))),
+          h("div", { class: "small mono truncate muted", title: account.directory, text: account.display_directory || account.directory }),
+          h("div", { class: "row" }, install,
+            h("span", { class: "small muted", text: account.skill.shared
+              ? "Codex reads skills from ~/.agents/skills, shared by every Codex account."
+              : `Installs into ${account.skill.destination || "this account's skills folder"}.` })),
+          account.harness.installed ? null : h("div", { class: "stack-sm" },
+            h("span", { class: "small muted", text: "Harness — run in a terminal:" }),
+            codeLine(account.harness.command),
+            codeLine(account.harness.ask_command)));
+      });
+
+      // Codex and Claude Code have their harness on each account above.
+      const harnesses = data.harnesses.filter((harness) => harness.id !== "codex" && harness.id !== "claude").map((harness) => h("div", { class: "card stat" },
+        h("div", { class: "row-between" }, h("strong", { text: harness.display_name }), harness.ask_command ? badge("Can wait for answers", "info") : null),
+        h("p", { class: "small muted", text: harness.note }),
+        codeLine(harness.command),
+        harness.ask_command ? codeLine(harness.ask_command) : null));
+
+      mount(page, 
+        pageHead("Agents", "Connect coding agents to AgentNotify. The skill teaches an agent when to notify you; a harness makes the host itself report and, for some hosts, wait for your approval."),
+        card({
+          title: "Codex and Claude Code accounts",
+          description: "Every account on this computer — the same list as Live quota and the model router, including second profiles such as ~/.claude-second. Each account notifies only once its own skill or harness is installed.",
+          actions: button("Refresh", { size: "sm", iconName: "refresh", onClick: async () => draw(await api.get("agents")) }),
+          body: h("div", { class: "stack" }, accounts.length ? accounts : h("p", { class: "muted small", text: "No Codex or Claude Code account was found." })),
+        }),
+        card({
+          title: "Other agents' skill",
+          description: "Installs a Markdown skill into each other agent's personal skills folder, including agents inside running WSL distributions. Restart the agent to load it.",
+          body: h("div", { class: "list", role: "list" }, skills),
+        }),
+        card({
+          title: "Other agents' harnesses",
+          description: "Run these in a terminal. A harness edits the host's own configuration, so it stays a deliberate step you take there.",
+          body: [
+            h("div", { class: "grid-2" }, harnesses),
+            notice("With --ask, Codex and Claude Code pause each approval until you answer here, on your phone, or in the terminal. If nobody answers in time they fall back to the normal prompt.", "info"),
+          ],
+        }));
+    };
+
+    draw(await api.get("agents"));
+  },
+};

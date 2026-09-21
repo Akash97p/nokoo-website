@@ -1,0 +1,116 @@
+# Releases and GitHub Pages
+
+The repository is published at [github.com/Akash97p/agent-notify](https://github.com/Akash97p/agent-notify). These files document the release process; GitHub Actions performs the hosted build and publication after an authorized tag push.
+
+## GitHub repository setup
+
+1. Keep `main` as the stable release line and `dev` as the integration line.
+2. Make `main` the default protected branch and require the CI workflow before merge.
+3. In **Settings → Pages**, select **GitHub Actions** as the publishing source.
+4. Keep normal development on topic branches merged into `dev`; promote a tested release from `dev` to `main` through review.
+5. Obtain and configure Authenticode signing before presenting a public build as trusted. The current workflow produces unsigned binaries.
+
+The Pages workflow builds the Next.js application in `site/` as a static export after changes reach
+`dev` or `main`. The site uses TypeScript, Tailwind CSS, and checked-in shadcn/ui source components;
+`scripts/build-site.sh` copies the ARC 0.1 and 0.2 schemas and branding assets, runs `npm ci`, type-checks, builds,
+and stages the export in `_site`. GitHub Actions then uploads that directory using the official Pages
+actions and requests only read, Pages, and OIDC permissions.
+
+The latest tagged prerelease is
+[`v0.2.0-alpha.3`](https://github.com/Akash97p/agent-notify/releases/tag/v0.2.0-alpha.3),
+tagged 2026-09-19; the tag's release workflow publishes the Windows installer, portable archives,
+checksums, and skill.
+GitHub Pages follows the `dev`/`main` documentation source, so it can describe newer development
+features before another binary release is tagged. A user needs a new broker build to try those
+features.
+
+## First hosted prerelease: `v0.0.1-alpha.1`
+
+The first hosted prerelease was prepared on the `dev` integration line and published on 2026-08-12:
+
+- Tag: [`v0.0.1-alpha.1`](https://github.com/Akash97p/agent-notify/releases/tag/v0.0.1-alpha.1)
+- Merge commit: `8186aed` (`merge: prepare v0.0.1-alpha.1 prerelease`)
+- Actions run: [31566620009](https://github.com/Akash97p/agent-notify/actions/runs/31566620009)
+- Result: successful Windows build, test, packaging, and prerelease publication
+- Assets: `AgentNotifySetup.exe`, `SHA256SUMS.txt`, and `SKILL.md`
+- Local installer checksum recorded in [`docs/VERIFICATION.md`](VERIFICATION.md): `2000b536dc8eac4b72821d0ac6df7b79cb258f4ce7b2f0bfb7456a4df3d7e78b`
+
+This is an alpha evaluation release, not the mature `v1.0.0` release. It may contain incomplete features, breaking changes, unsigned binaries, and unverified provider integrations.
+
+### Version progression
+
+Use the committed `Version` value and exact `v`-prefixed tag together:
+
+| Stage | Example | Meaning |
+|---|---|---|
+| Pre-alpha | `v0.0.1-pre-alpha.1` | Internal or very early evaluation |
+| Alpha | `v0.0.1-alpha.1` | Active development; unstable and incomplete |
+| Beta | `v0.0.1-beta.1` | Feature-complete target with ongoing stabilization |
+| Release candidate | `v0.0.1-rc.1` | Candidate for a stable release |
+| First mature release | `v1.0.0` | Stable public milestone after release criteria pass |
+
+Any tag containing a hyphen is created by the workflow as a GitHub prerelease. A mature `v1.0.0` release should be promoted from a tested `dev` merge to `main` and should also complete signing, human verification, and release review.
+
+## Release notes
+
+The release description is written by hand in [`CHANGELOG.md`](../CHANGELOG.md), not generated from
+commit subjects. `scripts/release-notes.sh <tag> [previous-tag]` extracts that version's section and
+appends the install instructions, checksum guidance, documentation links, and a compare range. The
+workflow runs it and passes the result to `gh release create --notes-file`.
+
+The script **fails when `CHANGELOG.md` has no section for the tagged version**, which stops a
+release going out with an empty or wrong description. Add the section before tagging, and preview it
+locally:
+
+```bash
+./scripts/release-notes.sh v0.0.3-alpha.1 v0.0.2-alpha.1
+```
+
+## Create a release
+
+1. Update `Version`, `InformationalVersion`, `AssemblyVersion`, and `FileVersion` in `Directory.Build.props`. Keep the informational value and tag suffix identical; keep the assembly/file values numeric.
+2. Add the version's section to `CHANGELOG.md`, then update the verification record and any migration documentation.
+3. Run:
+
+   ```bash
+   ./scripts/build.sh
+   ./scripts/test.sh
+   ./scripts/package.sh
+   ```
+
+4. Verify the installer and `artifacts/SHA256SUMS.txt` on Windows.
+5. After the release commit is on the intended release branch, create and push an exact matching tag. Prerelease tags use SemVer-style suffixes and are marked as prereleases automatically:
+
+   ```bash
+   git tag -a v0.0.1-alpha.1 -m "AgentNotify v0.0.1-alpha.1"
+   git push origin v0.0.1-alpha.1
+   ```
+
+   The tag must exactly equal `v` plus the committed `Version` value. Examples include `v0.0.1-pre-alpha.1`, `v0.0.1-alpha.1`, `v0.0.1-beta.1`, `v0.0.1-rc.1`, and finally `v1.0.0`. The release workflow passes `--prerelease` whenever the tag contains a hyphen.
+
+The tag workflow independently restores, builds, tests, packages, checks the tag against `Directory.Build.props`, and creates a GitHub Release containing:
+
+- `AgentNotifySetup.exe`, the Windows installer;
+- `SHA256SUMS.txt`, covering the installer;
+- the distributable `SKILL.md`;
+- `agentnotify-win-x64.zip` and `agentnotify-{linux,osx}-{x64,arm64}.tar.gz`, the portable CLI and
+  `agentnotifyd` broker archives; macOS archives also contain `agentnotify-menubar`; and
+- `SHA256SUMS-portable.txt`, covering those archives.
+
+The portable archives are produced by a second job on a macOS runner after the Windows job succeeds.
+The .NET binaries still target every RID, but macOS packaging must run there because it compiles the
+Swift/AppKit status item separately for x86_64 and arm64.
+The two checksum files are deliberately named differently: two assets sharing one name would replace
+each other rather than sit side by side.
+
+The workflow fails rather than publishing when tests fail, packaging fails, the version is not SemVer-style, or the tag does not exactly match the product version. Numeric assembly/file metadata is `0.2.0.0` for the current `0.2.0-alpha.3` prerelease because Windows version-resource fields are numeric; API, CLI, installer, registry, package, and release display metadata use `0.2.0-alpha.3`.
+
+## Local packaging
+
+PowerShell is the portable packaging implementation:
+
+```powershell
+./scripts/package.ps1
+```
+
+The WSL `scripts/package.sh` wrapper resolves the configured Windows SDK path and invokes the same script, preventing local and hosted release logic from drifting.

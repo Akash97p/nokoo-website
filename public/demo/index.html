@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <title>AgentNotify demo</title>
+  <meta name="description" content="The AgentNotify web interface, running in your browser on invented data.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css">
+  <script type="module" src="js/app.js"></script>
+  <style>
+    /* Bottom left: toasts and the modal both live on the right, and the sidebar's foot is empty. */
+    .demo-ribbon {
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      z-index: 55;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100vw - 24px);
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--panel);
+      box-shadow: var(--shadow-lg);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .demo-ribbon b { font-weight: 600; }
+    .demo-ribbon span { color: var(--muted); }
+    .demo-ribbon a { color: inherit; white-space: nowrap; }
+    @media (max-width: 900px) {
+      .demo-ribbon { left: 8px; bottom: 8px; padding: 6px 10px; }
+      .demo-ribbon span { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="boot" aria-busy="true">
+    <p class="boot-text">Loading the AgentNotify demo…</p>
+  </div>
+  <noscript><p class="boot-text">The AgentNotify web interface needs JavaScript.</p></noscript>
+  <aside class="demo-ribbon">
+    <b>Demo</b>
+    <span>Every account, project, and number here is invented. Changes stay in this tab.</span>
+    <a href="../">← Back to the site</a>
+  </aside>
+</body>
+</html>

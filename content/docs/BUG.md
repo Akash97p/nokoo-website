@@ -1,0 +1,226 @@
+# Bug log
+
+Defects found in AgentNotify after a capability was considered complete, with what actually caused
+them and how each was verified. This is a record for contributors: several of these were only
+reachable by running the product rather than by reading it or by unit tests, and the pattern is
+worth learning from.
+
+Verification detail for each entry lives in [VERIFICATION.md](VERIFICATION.md).
+
+---
+
+## Settings window closed the application when a saved provider was selected
+
+**Found:** 2026-08-12, by the maintainer configuring a real Telegram bot.
+**Fixed in:** `fix/settings-json-null-crash`. **Severity:** high — terminated the broker.
+
+### Symptoms
+
+1. **Test send** delivered a message to Telegram successfully, but the Settings window then showed
+   an error mentioning null.
+2. Clicking the saved **Telegram** provider in the list closed the whole application, every time.
+
+### Cause
+
+`JsonElement.TryGetInt32` does not behave the way its name implies. It returns `false` only when the
+element is a number that will not fit in an `Int32`, and **throws `InvalidOperationException` for
+every other value kind, including JSON `null`**.
+
+The Settings window read optional integers as:
+
+```csharp
+root.TryGetProperty("messageThreadId", out var thread) && thread.TryGetInt32(out var threadId)
+```
+
+Optional provider settings are serialized as `null` when the user leaves the field blank, so a
+Telegram provider saved without a topic ID stores `"messageThreadId": null` — and reading it back
+threw. Any Telegram provider without a topic ID was affected, which is the common case.
+
+The two symptoms were the same exception surfacing in two different places:
+
+- `Provider_Selected` runs **outside** `RunAsync`, so the exception reached the WPF dispatcher
+  unhandled and terminated the tray process, taking the broker and its loopback API down with it.
+- `TestProvider_Click` runs **inside** `RunAsync`, which catches everything and displays
+  `exception.Message`. It saves, sends, then reloads and reselects the provider — so the throw
+  happened *after* Telegram had already accepted the message, making a successful send look failed.
+
+The same unsafe pattern existed at **eight** call sites: SMTP port, Telegram topic ID, Pushover
+emergency retry and expiry, Twilio SMS validity, Twilio WhatsApp validity, and MQTT port, QoS, and
+message expiry. Telegram was simply the first provider configured with a real account.
+
+### Fix
+
+`AgentNotify.Core.JsonConfigReader` reads optional values and treats absent, `null`, and
+wrong-typed entries alike as "not set". All eight sites use it. `Provider_Selected` additionally
+catches anything a stored profile can throw and reports it in the status line, so no saved row can
+terminate the process again.
+
+### Lessons
+
+- A `Try`-prefixed API is not automatically total. `JsonElement.TryGetInt32` throws for the input a
+  user is most likely to produce. A test now asserts that behaviour so the assumption is pinned.
+- `catch (JsonException)` around JSON handling looked defensive but caught the wrong exception type.
+- Any handler that can run outside the panel's `RunAsync` wrapper can kill the process. UI event
+  handlers need their own guard.
+
+---
+
+## Settings could get stuck editing a saved provider with no way back to a new one
+
+**Found:** 2026-08-13, by the maintainer adding a second provider.
+**Fixed in:** `fix/provider-editor-reset`. **Severity:** medium — the tab became unusable until the
+Settings window was closed and reopened.
+
+### Symptoms
+
+After selecting an already-configured provider in **Channels → Providers**, there was no way to add
+another one. The provider type dropdown was greyed out with no explanation, nothing deselected the
+list row, and the only recovery was closing the Settings window and opening it again — which works
+because `App.ShowSettings` drops its window reference on `Closed`, so the panel is rebuilt from
+scratch.
+
+### Cause
+
+Three things combined, none of which is a thrown exception:
+
+1. **The escape hatch was easy to miss.** The only way back to a blank editor was a button labelled
+   just `New`, sitting under the list beside `Delete`, with no heading and nothing to say which
+   profile the right-hand form belonged to.
+2. **The escape hatch could be off-screen.** The left column was a `StackPanel` holding a
+   fixed `Height="330"` list followed by the buttons, inside a tab that does not scroll. Whenever
+   the available height fell below roughly 380px — the window near its `MinHeight="580"`, or a
+   higher display scale — the `StackPanel` was clipped and the `New` and `Delete` buttons were
+   simply not rendered.
+3. **Selecting a profile locked the type dropdown permanently.** `LoadSelectedProvider` sets
+   `ProviderKindBox.IsEnabled = false` because a saved profile's kind cannot change. Nothing said
+   so, and `Provider_Selected` returned early on a null selection, so clearing the selection left
+   the previous profile's values and its disabled dropdown in place.
+
+### Fix
+
+- Both list columns are now `Grid`s whose list row is `*` with a `MinHeight`, so the list shrinks
+  and the buttons stay visible at every window size instead of the buttons being pushed out.
+- `+ New provider` / `+ New route` are full-width buttons above their list, with `Delete selected`
+  below it and a line of help text between them.
+- The editor has a heading that reads `New provider` or `Editing "<name>"`, so the form's subject is
+  always visible.
+- The disabled provider type dropdown now shows why it is disabled and what to press instead.
+- Pressing Escape in either list returns to a blank editor.
+- `Provider_Selected` and `Route_Selected` reset their form when the selection becomes null, so
+  every path that clears a selection — the button, Escape, a delete, a reload — lands on the same
+  usable state. The reset runs inside a guard that reports failures in the status line, following
+  the lesson from the entry above: a handler outside `RunAsync` must never reach the dispatcher.
+
+### Lessons
+
+- A fixed-height control in a non-scrolling `StackPanel` does not overflow, it disappears — and it
+  takes whatever follows it with it. The controls that must never vanish belong in `Auto` rows, with
+  the resizable content in the `*` row.
+- Disabling a control without saying why leaves a dead end. The recovery has to be visible from the
+  state the user is stuck in.
+
+---
+
+## Local state could be written into the working directory on macOS and Linux
+
+**Found:** 2026-08-12, by running the Linux broker. **Fixed in:** `feature/cross-platform-core`.
+**Severity:** high — wrote the local bearer token to an unexpected location.
+
+On Unix, `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)` returns an **empty string**
+when the directory does not exist yet, which is the normal state of a fresh account. Combining that
+empty string produced the relative path `AgentNotify`, so the first run wrote `config.json` —
+containing the local bearer token — plus `secret.key` and the history database into whatever
+directory the broker happened to start in. On a developer machine that is the repository being
+worked on, where it could be committed.
+
+`ConfigStore.DefaultConfigDir` now resolves through `SpecialFolderOption.Create`, then
+`XDG_DATA_HOME`, then `$HOME`, and always returns an absolute path. Covered by a regression test.
+
+---
+
+## `agentnotifyd` ignored SIGTERM
+
+**Found:** 2026-08-12, by stopping the Linux broker. **Fixed in:** `feature/cross-platform-core`.
+**Severity:** high — the daemon could not be stopped normally.
+
+The `PosixSignalRegistration` objects were created and discarded. Once finalized, the handler is
+unhooked, so the broker neither shut down nor exited on `SIGTERM` and could only be stopped with
+`SIGKILL` — unmanageable under systemd or launchd. The registrations are now held for the lifetime
+of the process. Shutdown could also hang forever on an unbounded dispatcher stop; every step is now
+bounded and a second signal exits immediately.
+
+---
+
+## Sound file names were sanitized inconsistently across platforms
+
+**Found:** 2026-08-12, by the first Linux and macOS CI run. **Fixed in:**
+`fix/portable-filename-sanitizing`. **Severity:** medium.
+
+`Path.GetFileName` is platform-dependent: Windows treats `\` as a separator, Unix treats it as an
+ordinary file-name character. A configured sound of `C:\outside\global.MP3` therefore passed through
+sanitizing unchanged on Linux and macOS, so the invariant that a configured sound is a bare file
+name inside the managed directory did not hold there. Since `config.json` is portable between
+machines, `SafeFileName.Last` now normalizes identically on every platform using plain string
+operations.
+
+This is the only defect so far found by CI rather than by a person, and it is a good argument for
+the Linux and macOS runners.
+
+---
+
+## A fallback chain stopped at the first target that rejected the request
+
+**Found:** 2026-09-20, by the owner, using a four-target combo to avoid exactly this. **Fixed in:**
+`fix/failover-on-upstream-400`. **Severity:** high.
+
+A combo of four targets returned `Upstream returned HTTP 400 (invalid_request_error)` to the agent
+with three targets untried. `IsRetryableStatus` listed `401`, `402`, `403`, `404`, `408`, `429` and
+the `5xx` family; `400` was deliberately excluded on the reasoning that a `4xx` is the request's
+fault and no other target can help.
+
+That reasoning is sound for a client that talks to one provider and wrong for a router. Each target
+is sent its **own rendering** of the request — a different wire, its own translation, and its own
+rules about identifiers, role order, and which fields it accepts — so one provider refusing what it
+was sent predicts nothing about the next refusing what it *will* be sent. The one status most likely
+to differ between providers was the one status that ended the chain.
+
+`400` now fails over as `upstream_rejected`, and is the only fail-over status that does not cool the
+target down, because it describes the request rather than the provider's health. A translation
+failure for one target likewise ends that attempt instead of the request.
+
+The test that had to be rewritten, `Upstream400_NotRetried`, is the point: the suite was pinning the
+defect in place, and had been since the behaviour was written. A passing test only proves the code
+does what someone once decided it should.
+
+---
+
+## Replayed reasoning identifiers poisoned every later turn of a conversation
+
+**Found:** 2026-09-20, by the owner, in a Codex session that failed identically after a model change.
+**Fixed in:** `fix/responses-item-id-sanitising`. **Severity:** medium.
+
+A stateless Responses client replays its whole history each turn, every item carrying the identifier
+the upstream that produced it assigned. A ChatGPT-plan backend issues reasoning identifiers shaped
+`rs_<response>:rs_<item>`, and the Responses contract accepts only letters, digits, underscores and
+dashes — so once one entered the history, every later turn was rejected with `400` naming the index,
+and kept being rejected after a model change because the history travelled with it.
+
+The router minted none of this and joined nothing with a colon; a same-wire hop rewrote only `model`
+and forwarded `input` verbatim. That is the defect: routing is what lets turn N and turn N+1 land on
+different providers, so the router owns the consequence of conversation state being provider-scoped.
+Such identifiers are now stripped, and a reasoning item carrying one is dropped, with the count
+logged rather than applied silently.
+
+The failing request body was not recoverable — provider error bodies are deliberately never stored —
+so this was diagnosed from the upstream's own error text. That privacy guarantee has a diagnostic
+cost, and this is the first time it was paid.
+
+---
+
+## Recurring theme
+
+Every entry above was found by **running the software**, not by reading it, and not by the unit
+tests — which numbered in the hundreds, then the thousands, and passed throughout. In one case a
+test actively held the defect in place. Cross-compilation proved the code
+built for five runtimes while three of these defects sat in it. A test suite and a green build say
+nothing about whether the first run on a fresh account puts your bearer token in the right place.
