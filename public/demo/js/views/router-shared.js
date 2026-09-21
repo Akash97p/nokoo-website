@@ -10,7 +10,7 @@ const openAgents = new Set();
 // Page titles live here so every section shares one voice.
 const TITLES = {
   providers: ["Providers", "Add a provider, tick its models, and they show up in your agents' model pickers."],
-  routing: ["Routing", "Optional nicknames, fallback chains, and how smart switching moves requests between matching providers."],
+  routing: ["Routing", "How the router picks a provider and a model: smart routing across providers, adaptive routing by task difficulty, and your own nicknames and fallback chains."],
   agents: ["Agents", "Point an agent's own model picker at the router, and put its settings back."],
   activity: ["Activity", "What the router actually sent, per request and per attempt."],
 };
@@ -77,6 +77,7 @@ export async function renderRouter(page, ctx, section) {
     const upstreamsHost = h("div");
     const routesHost = h("div");
     const smartHost = h("div");
+    const adaptiveHost = h("div");
     const defaultHost = h("div");
     const ledgerHost = h("div");
     const summaryHost = h("div");
@@ -760,7 +761,7 @@ export async function renderRouter(page, ctx, section) {
           state.switch_strategy = result.switch_strategy;
           state.smart_routing = result.smart_routing;
           state.claude_fallback_route = result.claude_fallback_route;
-          toast("Router switching settings saved.");
+          toast("Smart routing settings saved.");
           clear(status);
         } catch (error) {
           status.replaceChildren(notice(error.message, "danger"));
@@ -776,7 +777,7 @@ export async function renderRouter(page, ctx, section) {
 
       mount(smartHost,
         card({
-          title: "Smart switching",
+          title: "Smart routing",
           description: "Choose how requests start across providers. Qualifying limits, refused credentials, timeouts, and outages still move to the next target before any response bytes reach the agent.",
           body: [
             field("Method", strategy, { help: "Ordered starts from the first provider every request. Sticky keeps the last working routed provider until it fails. Round robin rotates the routed starting provider for each request." }),
@@ -789,6 +790,140 @@ export async function renderRouter(page, ctx, section) {
           ],
         }),
       );
+    }
+
+    // ---- adaptive routing ------------------------------------------------------------
+
+    const TIERS = [
+      ["light", "Light", "Greetings, quick questions, commit messages, one-line edits."],
+      ["standard", "Standard", "Everyday coding: a bug, a focused change, a review."],
+      ["deep", "Deep", "Long-horizon work: migrations, multi-file refactors, design."],
+    ];
+
+    // The demo's stand-in for the local heuristics: size, code, and the shape of the ask.
+    function classify(prompt) {
+      const text = prompt.trim().toLowerCase();
+      if (!text) return null;
+      const words = text.split(/\s+/).length;
+      const deep = /\b(migrat|refactor|architect|redesign|across (the|every)|end[- ]to[- ]end|every caller|whole|entire|long[- ]running|multi[- ]step|plan and implement|keep tests green)/;
+      const light = /^(hi|hey|hello|thanks|thank you|ok|yes|no)\b|how are you|commit message|what does .{1,30} mean|typo|rename this variable|summari[sz]e this line/;
+      if (deep.test(text) || words > 80 || /```[\s\S]{400,}/.test(prompt)) return ["deep", 0.9];
+      if (light.test(text) || (words <= 8 && !/```/.test(prompt))) return ["light", words <= 8 ? 0.96 : 0.9];
+      return ["standard", 0.78];
+    }
+
+    function drawAdaptive() {
+      const cfg = state.adaptive || { enabled: false, engine: "heuristics", skip_agent_traffic: true, tiers: {}, recent: [] };
+      const enabled = toggle("Adaptive routing", cfg.enabled, {
+        help: "Chooses which model answers each request by how hard it is, before smart routing picks a provider for that model.",
+      });
+      const engine = select([
+        ["heuristics", "Local heuristics — decided on this computer"],
+        ["jev", "Jev by TypeSafe AI — coming soon"],
+      ], cfg.engine || "heuristics");
+      engine.querySelector('option[value="jev"]').disabled = true;
+      const skipAgents = checkbox("Leave structured agent traffic alone", cfg.skip_agent_traffic, {
+        help: "Tool calls, subagents, and review models keep the model the agent asked for.",
+      });
+
+      const modelOptions = modelChoices().flatMap(group => group.options);
+      const tierSelects = {};
+      const tierRows = TIERS.map(([key, label, hint]) => {
+        const sel = h("select", { class: "select" });
+        for (const option of modelOptions) sel.append(h("option", { value: option, text: option, selected: option === cfg.tiers?.[key] }));
+        tierSelects[key] = sel;
+        return h("tr", null,
+          h("td", null, h("div", { class: "small", style: { fontWeight: "550" }, text: label }), h("div", { class: "muted small", text: hint })),
+          h("td", { style: { minWidth: "220px" } }, sel));
+      });
+
+      // Try-it preview: shows the tier the heuristics would pick, live, as you type.
+      const tryInput = input({ placeholder: "Type a prompt, e.g. \"write a commit message\"" });
+      const verdict = h("div", { class: "row", style: { minHeight: "28px", flexWrap: "wrap", gap: "8px" } });
+      const renderVerdict = () => {
+        const result = classify(tryInput.value);
+        if (!result) { verdict.replaceChildren(h("span", { class: "muted small", text: "The tier and model appear here as you type." })); return; }
+        const [tier, confidence] = result;
+        const label = TIERS.find(t => t[0] === tier)[1];
+        verdict.replaceChildren(
+          badge(label, tier === "light" ? "ok" : tier === "deep" ? "info" : null),
+          h("span", { class: "mono small", text: `→ ${tierSelects[tier].value}` }),
+          h("span", { class: "muted small", text: `· ${Math.round(confidence * 100)}% confident` }));
+      };
+      tryInput.addEventListener("input", renderVerdict);
+      const examples = h("div", { class: "row", style: { flexWrap: "wrap", gap: "6px" } },
+        ["hi, how are you?", "write a commit message", "fix the null check in parseConfig", "migrate auth to the new session store across every service"].map(text =>
+          button(text, { size: "sm", variant: "ghost", onClick: () => { tryInput.value = text; renderVerdict(); } })));
+      renderVerdict();
+
+      const week = cfg.week;
+      const stats = week ? h("div", { class: "stats" },
+        stat("Tokens saved", `${week.tokens_saved_pct}%`, "this week, versus always using the requested model"),
+        stat("Light", String(week.light), "requests kept off the largest model"),
+        stat("Standard", String(week.standard), "requests"),
+        stat("Deep", String(week.deep), "requests moved up for long work"),
+      ) : null;
+
+      const recent = (cfg.recent || []).length ? h("details", { class: "meta-disclosure", open: true },
+        h("summary", { text: `Recent decisions (${cfg.recent.length})` }),
+        h("div", { class: "table-wrap" }, h("table", { class: "table" },
+          h("thead", null, h("tr", null, ["Prompt", "Asked for", "Tier", "Answered by", "Confidence"].map(t => h("th", { text: t })))),
+          h("tbody", null, cfg.recent.map(d => h("tr", null,
+            h("td", { class: "small", text: d.prompt }),
+            h("td", { class: "mono small", text: d.requested }),
+            h("td", null, badge(TIERS.find(t => t[0] === d.tier)[1], d.tier === "light" ? "ok" : d.tier === "deep" ? "info" : null)),
+            h("td", { class: "mono small", text: d.chosen }),
+            h("td", { class: "small", text: `${Math.round(d.confidence * 100)}%` }))))))) : null;
+
+      const status = h("div", { class: "stack" });
+      const save = button("Save", { variant: "primary", size: "sm" });
+      save.addEventListener("click", () => busy(save, async () => {
+        try {
+          const result = await api.put("router/adaptive-settings", {
+            enabled: enabled.input.checked,
+            engine: engine.value,
+            skip_agent_traffic: skipAgents.input.checked,
+            tiers: Object.fromEntries(Object.entries(tierSelects).map(([key, sel]) => [key, sel.value])),
+          });
+          state.adaptive = { ...cfg, ...result };
+          toast(result.enabled ? "Adaptive routing is on." : "Adaptive routing is off.");
+          clear(status);
+        } catch (error) {
+          status.replaceChildren(notice(error.message, "danger"));
+        }
+      }));
+
+      mount(adaptiveHost,
+        card({
+          title: "Adaptive routing",
+          description: "No more finding out six hours into a long task that it ran on the smallest model — and no more waking the largest one for \"hi\" or a commit message. Each request is matched to the model its difficulty needs.",
+          actions: [badge("Heuristics", "ok"), badge("Jev · coming soon", "info")],
+          body: [
+            enabled,
+            stats,
+            h("div", { class: "table-wrap" }, h("table", { class: "table" },
+              h("thead", null, h("tr", null, h("th", { text: "Tier" }), h("th", { text: "Model" }))),
+              h("tbody", null, tierRows))),
+            h("div", { class: "grid-2" },
+              field("Decision engine", engine, { help: "Heuristics run locally and send nothing anywhere. Jev, a decision model from TypeSafe AI, will be an opt-in upgrade using your own key." }),
+              h("div", { class: "field" }, skipAgents)),
+            field("Try a prompt", tryInput),
+            examples,
+            verdict,
+            h("p", { class: "muted small", text: "Low-confidence decisions keep the model you asked for. In internal tests adaptive routing cut token use by up to 20%." }),
+            h("div", { class: "row" }, save),
+            recent,
+            status,
+          ],
+        }),
+      );
+    }
+
+    function stat(label, value, sub) {
+      return h("div", { class: "card stat" },
+        h("div", { class: "stat-label", text: label }),
+        h("div", { class: "stat-value", text: value }),
+        h("div", { class: "stat-sub", text: sub }));
     }
 
     // ---- default route ---------------------------------------------------------------
@@ -1135,7 +1270,7 @@ export async function renderRouter(page, ctx, section) {
 
     const sections = {
       providers: [statusHost, upstreamsHost],
-      routing: [routesHost, defaultHost, smartHost],
+      routing: [smartHost, adaptiveHost, routesHost, defaultHost],
       agents: [agentsHost, connectHost],
       activity: [ledgerHost, summaryHost],
     };
@@ -1150,7 +1285,7 @@ export async function renderRouter(page, ctx, section) {
     );
 
     if (section === "providers") { drawStatus(); drawUpstreams(); }
-    if (section === "routing") { drawRoutes(); drawDefault(); drawSmart(); }
+    if (section === "routing") { drawSmart(); drawAdaptive(); drawRoutes(); drawDefault(); }
     if (section === "agents") { drawConnect(); await drawAgents(); }
     if (section === "activity") {
       drawLedger();

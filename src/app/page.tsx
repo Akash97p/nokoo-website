@@ -53,7 +53,7 @@ const pillars = [
     name: "Route",
     title: "Sends every model call where you choose",
     body: "A loopback router speaks OpenAI Responses, Chat Completions, and Anthropic Messages. It picks a provider and model, translates between wires, and fails over — without changing the agent.",
-    points: ["Nicknames, fallback chains, smart switching", "Codex and Claude Code connected in one click", "A ledger that never stores prompts or keys"],
+    points: ["Smart and adaptive routing, nicknames, fallback chains", "Codex and Claude Code connected in one click", "A ledger that never stores prompts or keys"],
     href: "/router/",
     link: "Explore the model router",
   },

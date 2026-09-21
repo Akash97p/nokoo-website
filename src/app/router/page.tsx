@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, GitBranch, LockKeyhole, Route, ScrollText, Server, Workflow } from "lucide-react";
+import { ArrowRight, Gauge, GitBranch, LockKeyhole, Route, ScrollText, Server, Sparkles, Workflow } from "lucide-react";
 
 import { RouterFlow, WireLanes } from "@/components/router-flow";
 import { CountUp, Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
@@ -12,14 +12,31 @@ import { Separator } from "@/components/ui/separator";
 export const metadata: Metadata = {
   title: "Model router",
   description:
-    "The opt-in AgentNotify model router: loopback endpoint, wire translation, aliases and fallback combos, agent connectors, and a redacted request ledger.",
+    "The opt-in AgentNotify model router: adaptive routing by task difficulty, smart routing across providers, wire translation, aliases and fallback combos, agent connectors, and a redacted request ledger.",
 };
 
 const facts = [
+  { value: 20, suffix: "%", label: "token savings, at most, from adaptive routing in internal tests" },
   { value: 3, label: "wire formats accepted" },
   { value: 1, label: "loopback entry point" },
   { value: 0, label: "prompts stored in the ledger" },
 ];
+
+const adaptiveExamples = `"hi, how are you?"
+    light     → claude-haiku-4-5
+
+"write a commit message"
+    light     → claude-haiku-4-5
+
+"fix the null check in parseConfig"
+    standard  → claude-sonnet-5
+
+"migrate billing to the new ledger
+ schema, keep every test green"
+    deep      → claude-opus-5
+
+  decided  locally · 0.9 confidence
+  then     smart routing picks the provider`;
 
 export default function RouterPage() {
   return (
@@ -44,15 +61,39 @@ export default function RouterPage() {
       </section>
 
       <section className="border-b bg-card/30">
-        <Stagger className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-3 sm:px-6">
+        <Stagger className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
           {facts.map((fact) => (
             <StaggerItem key={fact.label} className="text-center sm:text-left">
-              <p className="text-4xl font-semibold tracking-[-0.04em]"><CountUp value={fact.value} /></p>
+              <p className="text-4xl font-semibold tracking-[-0.04em]"><CountUp value={fact.value} />{fact.suffix}</p>
               <p className="mt-1 text-sm text-muted-foreground">{fact.label}</p>
             </StaggerItem>
           ))}
         </Stagger>
       </section>
+
+      <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:items-center">
+        <Reveal>
+          <Badge variant="secondary">Adaptive routing</Badge>
+          <h2 className="mt-5 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">The right model for every request.</h2>
+          <p className="mt-5 text-lg leading-8 text-muted-foreground">Adaptive routing decides which model should answer each request, by how hard it actually is. No more starting a six-hour, long-horizon task and finding out at the end that it ran on Haiku or Sonnet. And no more waking Opus to answer &ldquo;hi, how are you&rdquo; or write a commit message.</p>
+          <ul className="mt-8 grid gap-4">
+            <Step index="1" title="Matched to the task">Quick questions and commit messages go to a light model; everyday coding to a standard one; migrations and multi-file refactors to the deepest model you allow. You pick the model for each tier.</Step>
+            <Step index="2" title="Heuristics today, Jev next">Today the decision is made by local heuristics on your machine. Next, Jev — a decision model from TypeSafe AI — will make it more robust, as an opt-in upgrade with your own key.</Step>
+            <Step index="3" title="Safe when unsure">A low-confidence decision keeps the model you asked for, and structured agent traffic — tool calls and subagents — is left alone.</Step>
+          </ul>
+          <p className="mt-6 text-sm text-muted-foreground">Up to 20% fewer tokens in our internal tests. Adaptive routing chooses the model; smart routing then chooses the provider that serves it.</p>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <Card className="bg-black">
+            <CardHeader className="border-b"><p className="font-mono text-xs text-muted-foreground">what adaptive routing decides</p></CardHeader>
+            <div className="p-5 font-mono text-[13px] leading-6 text-zinc-300">
+              <pre className="overflow-x-auto"><code>{adaptiveExamples}</code></pre>
+            </div>
+          </Card>
+        </Reveal>
+      </section>
+
+      <Separator />
 
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
         <Reveal className="max-w-2xl">
@@ -61,6 +102,8 @@ export default function RouterPage() {
           <p className="mt-5 text-lg leading-8 text-muted-foreground">Every behaviour is explicit, reversible, and visible in the web interface.</p>
         </Reveal>
         <Stagger className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Feature icon={Sparkles} title="Adaptive routing">Each request goes to the model its difficulty needs — light, standard, or deep — decided locally before anything is sent. Up to 20% fewer tokens in internal tests.</Feature>
+          <Feature icon={Gauge} title="Smart routing">When several providers serve the same model, the router starts where you choose — ordered, sticky, or round robin — and moves on when a limit, refused credential, or outage gets in the way.</Feature>
           <Feature icon={Server} title="Loopback and off by default">The router listens on <code className="font-mono text-foreground">127.0.0.1</code> under its own key, separate from the notification API token. Nothing routes until you enable it.</Feature>
           <Feature icon={Workflow} title="Three wires, one decision">OpenAI Responses, OpenAI Chat Completions, and Anthropic Messages are accepted, translated only when needed, and passed through unchanged when the upstream already speaks the same format.</Feature>
           <Feature icon={GitBranch} title="Aliases, combos, failover">Address an upstream directly, use a nickname, or define an ordered combo. A target that fails, is cooling, or rejects the request hands it to the next eligible one — each gets its own rendering, so one provider&apos;s refusal does not end the chain. Requests that already streamed are never replayed blindly.</Feature>
@@ -78,7 +121,7 @@ export default function RouterPage() {
           <h2 className="mt-5 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Resolve, translate, send, record.</h2>
           <ol className="mt-8 grid gap-4">
             <Step index="1" title="Admit">The router authenticates the request with its own key and applies the same bounded body limits as the notification API.</Step>
-            <Step index="2" title="Resolve">A model selector becomes a concrete provider and model: an exact upstream, a unique alias, a combo, or a smart-switching group across providers that expose the same model.</Step>
+            <Step index="2" title="Resolve">A model selector becomes a concrete provider and model: adaptive routing first picks the model the task needs, then it becomes an exact upstream, a unique alias, a combo, or a smart-routing group across providers that expose the same model.</Step>
             <Step index="3" title="Translate">If the client wire and the upstream wire differ, the request is normalised and the response is reframed for the client. Same-wire traffic is passed through untouched.</Step>
             <Step index="4" title="Record">Each physical attempt is appended to the local ledger, and the visible row keeps the redacted route trace so a surprising answer can be explained.</Step>
           </ol>

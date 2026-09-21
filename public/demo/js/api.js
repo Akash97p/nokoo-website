@@ -325,6 +325,15 @@ function write(method, parts, body, query) {
         store.router.smart_routing = body.strategy !== "off";
         return clone(store.router);
       }
+      if (second === "adaptive-settings" && method === "PUT") {
+        Object.assign(store.router.adaptive, {
+          enabled: !!body.enabled,
+          engine: body.engine,
+          skip_agent_traffic: !!body.skip_agent_traffic,
+          tiers: { ...store.router.adaptive.tiers, ...body.tiers },
+        });
+        return clone(store.router.adaptive);
+      }
       if (second === "models" && third === "fetch" && method === "POST") {
         return { models: ["demo-model-a", "demo-model-b", "demo-model-c"], message: "Model lists come from the provider. The demo offers three invented names." };
       }

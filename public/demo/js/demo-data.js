@@ -578,6 +578,24 @@ let routerState = {
     { id: "rt-2", name: "deep", kind: "alias", enabled: true, targets: ["claude-plan/claude-opus-5"] },
     { id: "rt-3", name: "cheap", kind: "combo", enabled: false, targets: ["opencode-go/glm-5.3", "deepseek/deepseek-chat"] },
   ],
+  adaptive: {
+    enabled: true,
+    engine: "heuristics",
+    skip_agent_traffic: true,
+    tiers: {
+      light: "claude-plan/claude-haiku-4-5",
+      standard: "claude-plan/claude-sonnet-5",
+      deep: "claude-plan/claude-opus-5",
+    },
+    week: { decisions: 1_284, light: 512, standard: 598, deep: 174, tokens_saved_pct: 17.8 },
+    recent: [
+      { at: iso(3 * 60_000), prompt: "hi, how are you?", requested: "claude-opus-5", tier: "light", chosen: "claude-plan/claude-haiku-4-5", confidence: 0.98 },
+      { at: iso(9 * 60_000), prompt: "write a commit message for the staged changes", requested: "claude-opus-5", tier: "light", chosen: "claude-plan/claude-haiku-4-5", confidence: 0.95 },
+      { at: iso(26 * 60_000), prompt: "why does this test fail only on CI? [trace attached]", requested: "claude-sonnet-5", tier: "standard", chosen: "claude-plan/claude-sonnet-5", confidence: 0.81 },
+      { at: iso(48 * 60_000), prompt: "migrate billing to the new ledger schema, update every caller, keep tests green", requested: "claude-haiku-4-5", tier: "deep", chosen: "claude-plan/claude-opus-5", confidence: 0.93 },
+      { at: iso(71 * 60_000), prompt: "rename getUser to fetchUser across the repo", requested: "claude-opus-5", tier: "standard", chosen: "claude-plan/claude-sonnet-5", confidence: 0.77 },
+    ],
+  },
   smart_groups: [
     { model: "claude-sonnet-5", targets: ["claude-plan/claude-sonnet-5", "openrouter/claude-sonnet-5"] },
     { model: "kimi-k3", targets: ["opencode-go/kimi-k3", "deepseek/deepseek-chat"] },
