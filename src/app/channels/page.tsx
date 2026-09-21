@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Outbound channels",
@@ -150,7 +149,6 @@ export default function ChannelsPage() {
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Button asChild><Link href="/docs/channels/">Per-adapter documentation <ArrowRight /></Link></Button>
-              <Button asChild variant="outline"><a href={site.repository}>View source</a></Button>
             </div>
           </Reveal>
         </div>

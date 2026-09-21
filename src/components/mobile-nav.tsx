@@ -29,12 +29,6 @@ export function MobileNav() {
           <SheetClose asChild>
             <a className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" href={demoPath} target="_blank" rel="noreferrer">Try the demo</a>
           </SheetClose>
-          <SheetClose asChild>
-            <a className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" href={site.repository}>GitHub</a>
-          </SheetClose>
-          <SheetClose asChild>
-            <a className="rounded-md px-3 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground" href={site.releases}>Download latest release</a>
-          </SheetClose>
         </nav>
       </SheetContent>
     </Sheet>

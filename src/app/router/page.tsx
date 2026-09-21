@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Model router",
@@ -115,7 +114,6 @@ export default function RouterPage() {
               <p className="mt-5 leading-7 text-muted-foreground">Routing sends request content to the upstream provider you selected — that is the point of a router, and it is stated plainly rather than buried. Notification history, credentials, and non-router traffic never take part. Subscription-based integrations are labelled unofficial and stay opt-in.</p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Button asChild><Link href="/docs/router/">Router documentation <ArrowRight /></Link></Button>
-                <Button asChild variant="outline"><a href={site.repository}>View source</a></Button>
               </div>
             </Reveal>
             <Stagger className="grid gap-3">

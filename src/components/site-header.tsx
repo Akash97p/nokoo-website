@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, GitBranch, PlayCircle } from "lucide-react";
+import { ArrowRight, PlayCircle } from "lucide-react";
 
 import { MobileNav } from "@/components/mobile-nav";
 import { Button } from "@/components/ui/button";
-import { basePath, demoPath, navigation, site } from "@/lib/site";
+import { basePath, demoPath, docsEntry, navigation } from "@/lib/site";
 
 export function SiteHeader() {
   return (
@@ -30,11 +30,8 @@ export function SiteHeader() {
           <Button asChild variant="outline" size="sm">
             <a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Demo</a>
           </Button>
-          <Button asChild variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label="Source on GitHub">
-            <a href={site.repository}><GitBranch /></a>
-          </Button>
           <Button asChild size="sm">
-            <a href={site.releases}>Download <ArrowRight /></a>
+            <Link href={docsEntry}>Get started <ArrowRight /></Link>
           </Button>
           <MobileNav />
         </div>

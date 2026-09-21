@@ -6,7 +6,6 @@ import {
   Coins,
   Database,
   Gauge,
-  GitBranch,
   LockKeyhole,
   Minus,
   Network,
@@ -24,7 +23,7 @@ import { CountUp, Reveal, Stagger, StaggerItem } from "@/components/motion/revea
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { demoPath, docsEntry, site } from "@/lib/site";
+import { basePath, demoPath, docsEntry, site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const facts = [
@@ -113,8 +112,7 @@ export default function Home() {
               it tells you the moment an agent needs you, and carries your answer back.
             </p>
             <div className="mt-9 flex flex-wrap justify-center gap-3">
-              <Button asChild size="lg"><a href={site.releases}>Download latest release <ArrowRight /></a></Button>
-              <Button asChild size="lg" variant="outline"><a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Try the interface</a></Button>
+              <Button asChild size="lg"><a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Try the interface</a></Button>
               <Button asChild size="lg" variant="ghost"><Link href={docsEntry}>Install with your agent</Link></Button>
             </div>
             <p className="mt-5 text-sm text-muted-foreground">Local first · open source · no telemetry. Windows desktop app; broker, CLI, dashboard, and router on macOS and Linux too.</p>
@@ -275,7 +273,7 @@ export default function Home() {
           <Badge variant="secondary">ARC 0.2</Badge>
           <h2 className="mt-5 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">One contract for attention.</h2>
           <p className="mt-5 text-lg leading-8 text-muted-foreground">The Attention Request Contract is an open JSON contract for creating, updating, answering, and resolving bounded requests for human attention. It separates an immutable event from the condition that remains unresolved, and a request that expects an answer carries the shape of the answer it is waiting for.</p>
-          <div className="mt-8 flex flex-wrap gap-3"><Button asChild><Link href="/arc/">Read the specification <ArrowRight /></Link></Button><Button asChild variant="outline"><a href={`${site.url}/schemas/arc-0.2.schema.json`}>JSON Schema</a></Button></div>
+          <div className="mt-8 flex flex-wrap gap-3"><Button asChild><Link href="/arc/">Read the specification <ArrowRight /></Link></Button><Button asChild variant="outline"><a href={`${basePath}/schemas/arc-0.2.schema.json`}>JSON Schema</a></Button></div>
         </Reveal>
         <Reveal delay={0.1}>
           <Card className="min-w-0 bg-black">
@@ -317,7 +315,7 @@ export default function Home() {
         <Reveal>
           <Card className="items-center bg-primary py-12 text-center text-primary-foreground">
             <CardHeader className="max-w-3xl"><CardTitle className="text-3xl tracking-[-0.035em] sm:text-4xl">Stop checking every terminal.</CardTitle><CardDescription className="mt-3 text-base text-primary-foreground/70">Install AgentNotify, hand your coding agent the bundled skill, and let the control plane tell you when a human is actually needed.</CardDescription></CardHeader>
-            <CardContent className="flex flex-wrap justify-center gap-3"><Button asChild variant="secondary"><a href={site.releases}>Download release <ArrowRight /></a></Button><Button asChild variant="outline" className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"><a href={site.repository}><GitBranch />View source</a></Button></CardContent>
+            <CardContent className="flex flex-wrap justify-center gap-3"><Button asChild variant="secondary"><a href={demoPath} target="_blank" rel="noreferrer">Try the interface <ArrowRight /></a></Button><Button asChild variant="outline" className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"><Link href={docsEntry}>Install with your agent</Link></Button></CardContent>
           </Card>
         </Reveal>
       </section>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Separator } from "@/components/ui/separator";
-import { demoPath, docsEntry, site } from "@/lib/site";
+import { demoPath, docsEntry } from "@/lib/site";
 
 export function SiteFooter() {
   return (
@@ -17,7 +17,6 @@ export function SiteFooter() {
           <Link href="/relay/">Relay</Link>
           <Link href="/arc/">ARC</Link>
           <a href={demoPath} target="_blank" rel="noreferrer">Demo</a>
-          <a href={site.repository}>Source</a>
         </nav>
       </div>
     </footer>

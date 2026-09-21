@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { site, visuals } from "@/lib/site";
+import { visuals } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Insights",
@@ -28,7 +28,6 @@ export default function InsightsPage() {
             <p className="mt-6 text-lg leading-8 text-muted-foreground">Insights is one read-only page served by your own broker at <code className="rounded border bg-card px-1.5 py-0.5 font-mono text-base text-foreground">127.0.0.1</code>. It opens with what is waiting for you, then shows what your agents used, what those tokens would cost at published rates, how much quota each account has left, and whether routing is healthy.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link href="/docs/web-ui/">Open the web interface guide <ArrowRight /></Link></Button>
-              <Button asChild size="lg" variant="outline"><a href={site.releases}>Download release</a></Button>
             </div>
           </div>
           <div className="mt-14">

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { basePath, site } from "@/lib/site";
+import { basePath } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "ARC — the Attention Request Contract",
@@ -130,7 +130,6 @@ export default function ArcPage() {
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Button asChild><Link href="/docs/arc/">Full specification <ArrowRight /></Link></Button>
-                <Button asChild variant="outline"><a href={site.repository}>Implementation source</a></Button>
               </div>
             </Reveal>
             <Reveal delay={0.1}>

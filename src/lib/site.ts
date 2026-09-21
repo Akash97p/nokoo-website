@@ -5,9 +5,9 @@ export const site = {
   tagline: "The local control plane for coding agents — with notifications built in.",
   description:
     "The local control plane for coding agents: route model calls, measure usage and cost, watch live quota, and get notified — and answer — when an agent needs you.",
-  url: "https://akash97p.github.io/agent-notify",
-  repository: "https://github.com/Akash97p/agent-notify",
-  releases: "https://github.com/Akash97p/agent-notify/releases",
+  url: process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000",
 } as const;
 
 /** Documentation entry point. There is no separate documentation landing page. */

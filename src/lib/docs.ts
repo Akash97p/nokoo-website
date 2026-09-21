@@ -51,7 +51,6 @@ export const docs: DocDefinition[] = [
 export type RenderedDoc = DocDefinition & {
   html: string;
   toc: { level: number; id: string; text: string }[];
-  sourceUrl: string;
 };
 
 const repoRoot = path.join(process.cwd(), "content");
@@ -61,7 +60,20 @@ function rewriteLinks(sourcePath: string) {
   return () => (tree: Root) => {
     visit(tree, "element", (node: Element) => {
       if (node.tagName !== "a" || typeof node.properties?.href !== "string") return;
-      const href = node.properties.href;
+      let href = node.properties.href;
+      // The source repository is private: its links would 404, so they keep their text only.
+      if (/^https?:\/\/(www\.)?github\.com\/Akash97p\/agent-notify(\/|$)/i.test(href)) {
+        node.tagName = "span";
+        node.properties = {};
+        return;
+      }
+      // Links to the old GitHub Pages site resolve to the same page on this one.
+      const pages = href.match(/^https?:\/\/akash97p\.github\.io\/agent-notify(\/.*)?$/i);
+      if (pages) {
+        href = `${basePath}${(pages[1] ?? "/").replace(/^\/docs\/([^/#]+)\.html/, "/docs/$1/")}`;
+        node.properties.href = href;
+        return;
+      }
       if (/^(https?:|mailto:|#)/.test(href)) {
         if (/^https?:/.test(href)) {
           node.properties.target = "_blank";
@@ -73,9 +85,13 @@ function rewriteLinks(sourcePath: string) {
       const [rawPath, fragment] = href.split("#", 2);
       const normalized = path.posix.normalize(path.posix.join(path.posix.dirname(sourcePath), rawPath));
       const slug = sourceToSlug.get(normalized);
-      node.properties.href = slug
-        ? `${basePath}/docs/${slug}/${fragment ? `#${fragment}` : ""}`
-        : `https://github.com/Akash97p/agent-notify/blob/main/${normalized}${fragment ? `#${fragment}` : ""}`;
+      if (slug) {
+        node.properties.href = `${basePath}/docs/${slug}/${fragment ? `#${fragment}` : ""}`;
+        return;
+      }
+      // The source repository is private, so a link to any file outside the docs keeps its text only.
+      node.tagName = "span";
+      node.properties = {};
     });
   };
 }
@@ -113,7 +129,6 @@ export async function getDoc(slug: string): Promise<RenderedDoc | null> {
     ...definition,
     html,
     toc,
-    sourceUrl: `https://github.com/Akash97p/agent-notify/blob/main/${definition.source}`,
   };
 }
 
