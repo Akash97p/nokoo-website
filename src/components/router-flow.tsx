@@ -94,7 +94,7 @@ export function RouterFlow() {
             </p>
           </Panel>
 
-          <Panel title="AgentNotify router" live={current.active === "router"}>
+          <Panel title="Nokoo router" live={current.active === "router"}>
             <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
               <Route className="size-3.5 text-sky-300" />
               <span>combo/fast</span>

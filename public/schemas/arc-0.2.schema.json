@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://akash97p.github.io/agent-notify/schemas/arc-0.2.schema.json",
+  "$id": "https://nokoo.ai/schemas/arc-0.2.schema.json",
   "title": "Attention Request Contract 0.2",
   "description": "A transport-neutral event contract for creating, updating, answering, and resolving bounded requests for human attention.",
   "type": "object",
@@ -109,7 +109,7 @@
     "extensions": {
       "type": "object",
       "properties": {
-        "x-agentnotify": {
+        "x-nokoo": {
           "type": "object",
           "properties": {
             "notification_type": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" }

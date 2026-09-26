@@ -1,6 +1,6 @@
 # Cross-platform plan
 
-AgentNotify should become the common human-attention layer for coding agents on every desktop a
+Nokoo should become the common human-attention layer for coding agents on every desktop a
 developer uses, not only Windows. This document is the implementation plan: what has to change,
 in what order, and what "done" means for each step.
 
@@ -13,7 +13,7 @@ Status keys used below: **done**, **in progress**, **planned**.
 One command, any agent, any channel, any desktop:
 
 ```bash
-agentnotify send --type input_required --title "Need a decision" --message "A or B?"
+nokoo send --type input_required --title "Need a decision" --message "A or B?"
 ```
 
 The agent-facing contract — the CLI, the loopback `/v1` API, the notification model, `SKILL.md` —
@@ -42,18 +42,18 @@ Already portable — these target `net10.0` with no Windows-only API use:
 
 | Project | Role |
 | --- | --- |
-| `AgentNotify.Protocol` | Native DTOs, type IDs, JSON rules, ARC model/schema |
-| `AgentNotify.Core` | Domain, validation, config, SQLite, logging, delivery adapters |
-| `AgentNotify.Api` | Loopback Minimal API host |
-| `AgentNotify.Cli` | `agentnotify` command-line client |
-| `AgentNotify.Tests` | Automated coverage |
+| `Nokoo.Protocol` | Native DTOs, type IDs, JSON rules, ARC model/schema |
+| `Nokoo.Core` | Domain, validation, config, SQLite, logging, delivery adapters |
+| `Nokoo.Api` | Loopback Minimal API host |
+| `Nokoo.Cli` | `nokoo` command-line client |
+| `Nokoo.Tests` | Automated coverage |
 
 Windows-only by design — these target `net10.0-windows` and use WPF/WinForms:
 
 | Project | Role |
 | --- | --- |
-| `AgentNotify.App` | Tray process, toasts, notification center, Settings |
-| `AgentNotify.Setup` | Per-user installer |
+| `Nokoo.App` | Tray process, toasts, notification center, Settings |
+| `Nokoo.Setup` | Per-user installer |
 
 The three things that originally blocked non-Windows use:
 
@@ -73,7 +73,7 @@ expected to work unchanged.
 ### 1.1 Shared channel adapter list
 
 `App.xaml.cs` constructs all nineteen adapters inline. Move that construction into
-`AgentNotify.Core` so the WPF app and the new headless host cannot drift apart.
+`Nokoo.Core` so the WPF app and the new headless host cannot drift apart.
 
 *Done when:* a single factory in Core returns the adapter list, `App.xaml.cs` uses it, and the
 existing tests still pass unchanged.
@@ -105,7 +105,7 @@ master-key file, and `0700` on the config directory.
 
 ### 1.4 Headless host
 
-New `AgentNotify.Host` console project (`net10.0`, binary `agentnotifyd`) that composes config,
+New `Nokoo.Host` console project (`net10.0`, binary `nokood`) that composes config,
 logging, SQLite, the delivery dispatcher, the API, and a desktop notifier; handles `SIGINT`/`SIGTERM`;
 enforces single-instance with a lock file; and shuts down cleanly.
 
@@ -135,7 +135,7 @@ the console fallback instead of failing a notification, and notifier failure nev
 
 ## Phase 3 — Build and release (**done**)
 
-Publish self-contained single-file binaries for `agentnotify` and `agentnotifyd`:
+Publish self-contained single-file binaries for `nokoo` and `nokood`:
 
 - `win-x64`
 - `linux-x64`
@@ -143,7 +143,7 @@ Publish self-contained single-file binaries for `agentnotify` and `agentnotifyd`
 - `osx-x64`
 - `osx-arm64`
 
-The .NET CLI and broker still cross-compile, but an archive containing `agentnotify-menubar` must
+The .NET CLI and broker still cross-compile, but an archive containing `nokoo-menubar` must
 be packaged on macOS because Swift/AppKit is not built on Linux. The portable projects also build and
 test on Linux and macOS CI runners; the macOS job compiles and strictly verifies the native executable
 before release packaging.
@@ -180,7 +180,7 @@ the development environment has also used that Intel Mac for live broker and Web
 dated evidence is in [VERIFICATION.md](VERIFICATION.md). What can and cannot be claimed:
 
 WSL turned out to be more useful than expected: it is a real Linux x64 userland, so a
-`linux-x64` self-contained publish of `agentnotifyd` and `agentnotify` runs natively there. That
+`linux-x64` self-contained publish of `nokood` and `nokoo` runs natively there. That
 made it possible to verify the Linux broker end to end rather than only compile it.
 
 | Claim | Status |
@@ -194,7 +194,7 @@ made it possible to verify the Linux broker end to end rather than only compile 
 | `notify-send` actually displays a notification | **Unverified** — needs a graphical Linux session |
 | macOS `osascript` notifier actually displays a notification | **Verified** 2026-09-04 on owner Intel Mac hardware (banner seen on screen; see [VERIFICATION.md](VERIFICATION.md)) |
 | macOS `terminal-notifier` backend | **Unverified** — not installed on the verification machine |
-| AgentNotify Relay channel on macOS | **Verified end to end** 2026-09-10 — live discovery, browser approval, protected credential save, catch-all routing, encryption, first-attempt envelope acceptance (`201`), and mobile display all succeeded |
+| Nokoo Relay channel on macOS | **Verified end to end** 2026-09-10 — live discovery, browser approval, protected credential save, catch-all routing, encryption, first-attempt envelope acceptance (`201`), and mobile display all succeeded |
 | macOS Keychain key store | **Verified** on the macOS CI runner |
 | Linux `secret-tool` key store | **Unverified** — not installed on the CI runners; Linux exercises the key-file fallback |
 | Native macOS quota menu bar builds/signs | **Verified** for x86_64 and arm64 targets; the UI has not been visually observed |
@@ -208,7 +208,7 @@ macOS CI jobs are part of Phase 3 rather than an optional extra.
 
 ## Positioning
 
-AgentNotify is the local attention layer for coding agents across Windows, macOS, and Linux. The
+Nokoo is the local attention layer for coding agents across Windows, macOS, and Linux. The
 broker, CLI, API, and browser interface run on all three. macOS also has native quota status;
 full notification-center/toast settings remain Windows-only and Linux has no tray. Some optional
 agent harnesses invoke Python or a host's own runtime, but the broker, WebUI, and macOS status item

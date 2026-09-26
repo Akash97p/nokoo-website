@@ -1,12 +1,12 @@
-# AgentNotify Relay
+# Nokoo Relay
 
-AgentNotify Relay is the hosted service that carries attention requests from your computers to your
+Nokoo Relay is the hosted service that carries attention requests from your computers to your
 phone. It runs at:
 
 **`https://an.relay.dev.kabanitech.com`**
 
-From AgentNotify's point of view Relay is one more opt-in outbound channel, selected in
-**Settings → Channels → Providers** as the provider type **AgentNotify Relay**. Everything on this
+From Nokoo's point of view Relay is one more opt-in outbound channel, selected in
+**Settings → Channels → Providers** as the provider type **Nokoo Relay**. Everything on this
 page describes that channel. There is no server to install and no address to enter: the endpoint is
 fixed, and connecting a computer is a browser approval.
 
@@ -21,15 +21,15 @@ infrastructure you do not control.
 Relay is the alternative: a hop built for this one job, that your computers send to and your phone
 reads from. It is not a chat product with a notification feature bolted on, so the payload is sealed
 per recipient device before it leaves your machine and the relay stores ciphertext it cannot read.
-Local AgentNotify history stays authoritative either way — the relay is a transport, not a system of
+Local Nokoo history stays authoritative either way — the relay is a transport, not a system of
 record, and a relay that is unreachable never blocks or loses a local notification.
 
 ```
-Coding agent → ARC → AgentNotify (local history, toast)
+Coding agent → ARC → Nokoo (local history, toast)
                           ↓ durable outbox
-                     AgentNotify Relay          ← hosted
+                     Nokoo Relay          ← hosted
                           ↓ opaque push wake-up
-                     AgentNotify mobile app
+                     Nokoo mobile app
 ```
 
 ---
@@ -50,8 +50,8 @@ Coding agent → ARC → AgentNotify (local history, toast)
 No tokens are typed anywhere. Pairing follows the OAuth device authorization grant (RFC 8628), the
 same handshake used when signing a CLI or a smart TV into an account.
 
-1. In **Settings → Channels → Providers**, add a provider and choose **AgentNotify Relay**.
-2. Press **Connect**. AgentNotify shows a short code and opens your browser at the relay's approval
+1. In **Settings → Channels → Providers**, add a provider and choose **Nokoo Relay**.
+2. Press **Connect**. Nokoo shows a short code and opens your browser at the relay's approval
    page. If no browser can be opened — a headless server, an SSH session — it keeps polling and
    shows the URL and code so you can approve from any other device.
 3. Sign in to the relay console and approve the code shown on the computer.

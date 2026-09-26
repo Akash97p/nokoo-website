@@ -3,7 +3,139 @@
 Date: 2026-08-12
 Environment: Windows 11 host, WSL workspace, Windows .NET SDK 10.0.302 at `/mnt/d/dev/dotnet/dotnet.exe`, x64 publish target.
 
-This record distinguishes automated/process verification from visual checks. No result from the inherited `/mnt/d/dev/AgentNotify` documentation was accepted without rerunning it.
+This record distinguishes automated/process verification from visual checks. No result from the inherited `/mnt/d/dev/Nokoo` documentation was accepted without rerunning it.
+
+## Sift wording build installed on this Mac (2026-09-22)
+
+Installed local `dev` at `7e06970` on the owner's Intel Mac. The native .NET 10 SDK published the
+`osx-x64` CLI and broker as self-contained single files into an isolated temporary directory, and
+`scripts/build-macos-menu-bar.sh` built the AppKit child there. All three were ad-hoc signed and
+passed `codesign --verify --strict` before and after installation. The previous three executables
+were copied to `~/.local/bin/.nokoo-backup-sift-wording-h_jjpfjk` before replacement. The
+owner's data directory was not replaced or reset, and the LaunchAgent configuration was unchanged.
+
+`launchctl kickstart -k gui/$UID/ai.nokoo.broker` restarted the broker. The first health
+check ran before its listener was ready and got connection refused; the next returned `status: ok`,
+PID 31857, and 196 active notifications. The broker started `nokoo-menubar` as PID 31922.
+The installed CLI reported `0.2.0-alpha.3`. An HTTP 200 fetch of the live
+`/ui/js/views/router-shared.js` contained the revised Sift description and did not contain the
+removed training claim. No browser visual check or real routing request was run for this wording
+change.
+
+## Sift wording (`fix/sift-description`, 2026-09-22)
+
+On macOS with the native .NET 10 SDK, the WebUI decision-engine description and related documentation,
+comments, and training notes were checked for claims connecting Sift's training or performance to Jev.
+The UI still identifies Sift as Nokoo's own model and describes Jev as an optional remote engine.
+
+- `./scripts/check-webui.sh`: every WebUI script parsed as an ES module.
+- `python3 -m compileall -q tools/adaptive-routing`: passed.
+- `NOKOO_DOTNET_EXE=~/.dotnet/dotnet ./scripts/build.sh -p:EnableWindowsTargeting=true`:
+  passed with 0 warnings and 0 errors.
+- `NOKOO_DOTNET_EXE=~/.dotnet/dotnet ./scripts/test.sh -p:EnableWindowsTargeting=true`:
+  1,318 passed, 0 failed, 0 skipped.
+- `./scripts/package.sh` stopped before publishing because macOS has no `wslpath`. The equivalent
+  Windows `win-x64` publish steps from `scripts/package.ps1` were run directly with the native SDK:
+  tray and CLI single-file payloads were produced, then `NokooSetup.exe` was produced with
+  `RequirePayload=true`. The installer was non-empty (196 MB). Publish emitted an existing IL3000
+  warning in `SettingsWindow.xaml.cs` about `Assembly.Location` in a single-file app.
+
+The installer was not run on Windows, and the revised wording was not visually checked in a browser
+or installed into the running broker.
+
+## Sift, Nokoo's own routing model (`feature/sift-router-model`, 2026-09-22)
+
+Adaptive routing now has three engines: Sift (default), the heuristics, and Jev, which falls back
+to Sift. What was run on the owner's Mac with the SDK at `~/.dotnet/dotnet`:
+
+```bash
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh -p:EnableWindowsTargeting=true
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh -p:EnableWindowsTargeting=true
+./scripts/check-webui.sh
+cd tools/adaptive-routing/sift && python3 train_sift.py --out model --variants heuristics --C 32 && python3 export_sift.py ...
+```
+
+- Build: 0 warnings, 0 errors. Tests: 1,318 passed, 0 failed, including
+  `Sift_MatchesScikitLearnOnEveryReferencePrompt` — the C# port within 1e-6 of scikit-learn's
+  probabilities on 1,322 prompts (every held-out prompt, 400 training prompts, and accent, emoji, CJK,
+  whitespace, and over-long cases).
+- The shipped model is the one `train_sift.py` in the repository produces from the committed labels;
+  the first export came from an earlier run of the script whose vocabulary was fitted on 88% of the
+  data, and was replaced so the shipped model can be rebuilt from the repository alone.
+- Against the 909 hand-written held-out reference prompts: 84.3% label agreement and 75.5% correct
+  routing past the 60% gate. One demo prompt it misses: "fix the null check in parseConfig" is
+  labelled standard but Sift chooses light.
+- Speed in C#, 2,050 prompts including 500 long pasted WildChat messages: median 0.33 ms, p95 3.5 ms,
+  p99 9.6 ms, max 38 ms; model load about 260 ms once, on first use.
+- Tried and rejected, all scored the same way: 37,000 WildChat coding turns with reference labels (75–78%
+  agreement at weights 1, 0.3, and 0.1, and with the vocabulary restricted to agent data), and 12,000
+  active-learning labels (82.6%). Details in `tools/adaptive-routing/sift/README.md`.
+- Live, on a scratch broker (port 48998; the owner's installed broker was not touched): the engine saved
+  as `sift`, the preview showed Sift and the heuristics side by side, and a routed request for
+  `claude-plan/claude-haiku-4-5` asking to design an audit trail was decided deep by Sift and sent to
+  `claude-opus-5` (shift +1, engine `sift` in the ledger).
+
+**Installed on the owner's Mac** from `dev` at `1a397ca`, the same way as the adaptive-routing build:
+`./scripts/publish-cross.sh osx-x64`, binaries in `~/.local/bin` backed up (`-backup-sift-*`), replaced,
+adhoc re-signed, and the launchd job restarted. `nokoo health` answered `ok` with a new PID and
+the menu bar respawned. The owner's saved configuration came through unchanged — 6 providers,
+round-robin smart routing, and adaptive routing on with Jev and their own tiers
+(`opencode-go-2/glm-5.3-flash`, `deepseek/deepseek-flash`, `chatgpt/gpt-5.6-sol`) — and the installed
+broker reported `sift_available: true`, with Sift and the heuristics both reading "sure, ship that"
+as a follow-up.
+
+Not verified: the Routing page's new three-way preview in a browser (the script parses; nothing was
+clicked), and Sift on real agent sessions.
+
+## Adaptive routing with local heuristics and Jev (`feature/adaptive-routing`, 2026-09-22)
+
+Adaptive routing chooses the model for each turn — light, standard, or deep — before route
+resolution and smart routing, by local heuristics or by Jev with the owner's own TypeSafe key. What
+was run, on the owner's Intel Mac with the SDK at `~/.dotnet/dotnet`:
+
+```bash
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh -p:EnableWindowsTargeting=true
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh -p:EnableWindowsTargeting=true
+./scripts/check-webui.sh
+python3 tools/adaptive-routing/train.py --cv
+```
+
+- Release build: 0 warnings, 0 errors. `./scripts/test.sh`: 1,311 passed, 0 failed, including 28 new
+  adaptive-routing tests (reader, decision rules, Jev fallback, key sealing, proxy and API) and one
+  that holds the C# heuristics to the Python reference on all 739 labelled messages.
+- **Heuristics evaluation.** The first keyword-rule attempt scored 54% on a held-out batch, so it
+  was replaced by the fitted feature model. Held-out batches written *before* tuning on them scored
+  82%, 89%, 70.5% (a deliberately edge-case batch), and 80%. Final 5-fold cross-validation over
+  739 labelled messages scored 78.9% agreement; past the 60% gate the heuristics acted on 63% of
+  messages.
+- **Live Jev through the C# client.** A temporary test (not committed) sent 12 fresh prompts through
+  `JevClassifier` to `api.typesafe.ai` with the owner's key: all 12 matched the heuristics' tier;
+  Jev answered in ~320–400 ms (1.4 s for the first, connection setup included).
+- **Live broker.** The freshly built `nokood` on a scratch config directory and port 48998 (the
+  owner's installed broker, PID 1201, was left alone): adaptive routing saved through
+  `PUT /ui/api/router/adaptive-settings` with the Jev key, which did not appear in that response or in
+  `GET /ui/api/router`; `adaptive/preview` with `ask_jev` returned deep from both engines for a
+  repo-wide refactor; a real routed Anthropic-wire request for `claude-plan/claude-opus-5` saying "hi,
+  how are you?" was decided light by Jev and sent to `claude-haiku-4-5` (the upstream used a placeholder
+  key, so Anthropic answered 401, as expected), and its ledger row carried tier `light`, engine `jev`,
+  reason `classified`, shift −1.
+- **The Routing page** in headless Chrome against that broker: Smart routing, then Adaptive routing
+  (toggle, week counts, tier pickers, engine and key field, try-a-prompt, recent decisions), then routes
+  and the unknown-model fallback. The screenshot was looked at; one wording defect ("1 requests") was fixed.
+
+**Installed on the owner's Mac** from `dev` at `dffbcab`: `./scripts/publish-cross.sh osx-x64`, the
+three binaries in `~/.local/bin` backed up with the suffix `-backup-adaptive-routing-*`, replaced,
+adhoc re-signed (`codesign -v` passes), and `launchctl kickstart -k gui/$UID/ai.nokoo.broker`.
+`nokoo health` answered `ok` with a new PID, the menu bar was respawned, and the installed broker
+migrated the live database without loss — the owner's 6 providers and round-robin strategy were intact,
+`GET /ui/api/router` carried the new `adaptive` block (off, no tiers, no key), and
+`adaptive/preview` classified "write a commit message" as light.
+
+Not verified: a real turn from Claude Code or Codex through adaptive routing to a working provider,
+including a model change between turns on a native Claude Code conversation (argued safe because
+Claude Code's own `/model` does it, not observed here); the tool loop following its turn's decision
+against a live agent (covered only by unit tests); typing into the preview and pressing Save or Ask Jev
+in a real browser; Windows and the WSL-path gates; token savings, which are not measured at all.
 
 ## Pre-release security audit, and the repository gates rerun on macOS (2026-09-19)
 
@@ -16,8 +148,8 @@ What was actually run, on the owner's Intel Mac against the merged `dev` tree, u
 `~/.dotnet/dotnet` (10.0.401) through the repository scripts:
 
 ```bash
-AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh -p:EnableWindowsTargeting=true
-AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh -p:EnableWindowsTargeting=true
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh
 EnableWindowsTargeting=true dotnet package list --vulnerable --include-transitive
 node /tmp/an-render/layout.mjs "http://127.0.0.1:49002/ui/#/overview"   # headless Chrome over CDP
 npm run typecheck --prefix site && npm exec --yes --package=node@24.21.0 -- \
@@ -52,7 +184,7 @@ and the router instead of only the notification counts. Verified by running the 
 on a scratch config directory and driving headless Chrome over the DevTools protocol:
 
 ```bash
-dotnet exec agentnotifyd.dll --config-dir /tmp/an-render/config --port 48999 --no-desktop
+dotnet exec nokood.dll --config-dir /tmp/an-render/config --port 48999 --no-desktop
 # then, over CDP: navigate to /ui/#/overview, /ui/#/insights, /ui/#/quota and read document.body.innerText
 ```
 
@@ -77,16 +209,16 @@ does have a native .NET SDK at `~/.dotnet/dotnet` (10.0.401); it is merely absen
 corrects the "no .NET SDK" note in the section below. Command run:
 
 ```bash
-AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/publish-cross.sh osx-x64
+NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/publish-cross.sh osx-x64
 ```
 
-This produced `artifacts/cross/agentnotify-osx-x64.tar.gz` (CLI, broker, `agentnotify-menubar`,
+This produced `artifacts/cross/nokoo-osx-x64.tar.gz` (CLI, broker, `nokoo-menubar`,
 SHA-256 checksums). The CLI and broker projects — and with them the Contracts/Core/API assemblies
 carrying the router-switching change — **have now been compiled** (Release, osx-x64), though the
 tests below still have not run. The three binaries were installed into `~/.local/bin`
-(adhoc re-signed), the existing but previously unloaded `dev.agentnotify.broker` LaunchAgent was
-bootstrapped, and after 3 s: `agentnotify health` returned `status: ok`, and the broker had spawned
-`agentnotify-menubar --port 47821` as a live child process.
+(adhoc re-signed), the existing but previously unloaded `ai.nokoo.broker` LaunchAgent was
+bootstrapped, and after 3 s: `nokoo health` returned `status: ok`, and the broker had spawned
+`nokoo-menubar --port 47821` as a live child process.
 
 Not verified: the menu-bar status item's on-screen rendering and quota numbers (the process runs;
 the screen was not inspected), the full test suite on this host or on Windows, and a GitHub Actions
@@ -94,8 +226,8 @@ release run producing the osx-x64 archive.
 
 ## Router and Insights split out of Core; oversized files split (2026-09-19)
 
-`AgentNotify.Router` (router, translation, connectors) and `AgentNotify.Insights` (usage, quota,
-billing) are now separate assemblies that reference `AgentNotify.Core`; Core has no compile-time
+`Nokoo.Router` (router, translation, connectors) and `Nokoo.Insights` (usage, quota,
+billing) are now separate assemblies that reference `Nokoo.Core`; Core has no compile-time
 dependency on either. Alongside that, the largest source files were split into partial-class files
 by responsibility (`WebUiEndpoints.*`, `RouterEndpoints.*`, `Program.*`, `HarnessInstaller.*`,
 `LocalUsageService.*`, `RouterProxy.*`, `RouterConfigService.*`, `ProviderFormBuilder.*`,
@@ -106,8 +238,8 @@ Commands run on the owner's macOS host (Intel, macOS 26.6.2) with the native SDK
 `~/.dotnet/dotnet` (10.0.401):
 
 ```bash
-dotnet build AgentNotify.slnx -c Release -p:EnableWindowsTargeting=true   # 0 warnings, 0 errors
-dotnet test tests/AgentNotify.Tests/AgentNotify.Tests.csproj -c Release   # 1262 passed, 0 failed, 0 skipped
+dotnet build Nokoo.slnx -c Release -p:EnableWindowsTargeting=true   # 0 warnings, 0 errors
+dotnet test tests/Nokoo.Tests/Nokoo.Tests.csproj -c Release   # 1262 passed, 0 failed, 0 skipped
 ```
 
 Not run: `./scripts/build.sh`, `./scripts/test.sh`, and `./scripts/package.sh` (they invoke the
@@ -262,13 +394,13 @@ Contract tests verify fixed encrypted topic and username/password/certificate-th
 
 ### Skill
 
-`distribution/agentnotify` was initialized using the official skill initializer. `quick_validate.py` reports:
+`distribution/nokoo` was initialized using the official skill initializer. `quick_validate.py` reports:
 
 ```text
 Skill is valid!
 ```
 
-The installed `SKILL.md` was also checked for its expected `name: agentnotify` metadata.
+The installed `SKILL.md` was also checked for its expected `name: nokoo` metadata.
 
 ### Packaging
 
@@ -280,7 +412,7 @@ Command:
 
 Result:
 
-- `artifacts/AgentNotifySetup.exe`: approximately 193 MB, one self-contained file.
+- `artifacts/NokooSetup.exe`: approximately 193 MB, one self-contained file.
 - Embedded tray payload: approximately 89 MB.
 - Embedded CLI payload: approximately 41 MB.
 - Installer payload/resource validation passed.
@@ -288,14 +420,14 @@ Result:
 Latest locally packaged artifact SHA-256:
 
 ```text
-2000b536dc8eac4b72821d0ac6df7b79cb258f4ce7b2f0bfb7456a4df3d7e78b  AgentNotifySetup.exe
+2000b536dc8eac4b72821d0ac6df7b79cb258f4ce7b2f0bfb7456a4df3d7e78b  NokooSetup.exe
 ```
 
 Regenerate the checksum after any rebuild because it necessarily changes with the binary.
 
 ### Published GitHub prerelease
 
-The first hosted prerelease was published from tag `v0.0.1-alpha.1` after the release workflow verified the exact version match, SemVer-style metadata, Windows Release build, 597-test suite, packaging, and skill validity. GitHub Actions run [31566620009](https://github.com/Akash97p/agent-notify/actions/runs/31566620009) completed successfully. The [GitHub prerelease](https://github.com/Akash97p/agent-notify/releases/tag/v0.0.1-alpha.1) contains `AgentNotifySetup.exe`, `SHA256SUMS.txt`, and `SKILL.md`.
+The first hosted prerelease was published from tag `v0.0.1-alpha.1` after the release workflow verified the exact version match, SemVer-style metadata, Windows Release build, 597-test suite, packaging, and skill validity. GitHub Actions run [31566620009](https://github.com/Akash97p/agent-notify/actions/runs/31566620009) completed successfully. The [GitHub prerelease](https://github.com/Akash97p/agent-notify/releases/tag/v0.0.1-alpha.1) contains `NokooSetup.exe`, `SHA256SUMS.txt`, and `SKILL.md`.
 
 The prerelease is intentionally not the mature `v1.0.0` milestone. The release workflow marks any tag containing a hyphen as a prerelease; stable promotion to `v1.0.0` additionally requires a tested `main` release commit, signing, human checks, and release review.
 
@@ -312,7 +444,7 @@ Automated tests prove WAV/MP3 extension and size validation, safe content-addres
 Windows version-resource inspection confirmed for setup, tray, and CLI:
 
 ```text
-Product: AgentNotify
+Product: Nokoo
 Company: Kabani Tech Private Limited
 File version: 0.0.1.0
 ```
@@ -321,7 +453,7 @@ Authenticode status is `NotSigned`, as documented.
 
 ### Published tray/API/CLI smoke
 
-The actual packaged `AgentNotify.Tray.exe` and `agentnotify.exe` were copied to a temporary directory on the Windows `D:` filesystem and executed. Verified:
+The actual packaged `Nokoo.Tray.exe` and `nokoo.exe` were copied to a temporary directory on the Windows `D:` filesystem and executed. Verified:
 
 - tray/API process started;
 - authenticated `health` returned version `0.0.1-alpha.1`, API `v1`, and the running PID;
@@ -332,7 +464,7 @@ The actual packaged `AgentNotify.Tray.exe` and `agentnotify.exe` were copied to 
 - unauthenticated `/v1/health` returned HTTP `401`;
 - malformed JSON returned HTTP `400`;
 - resolving the ID removed it from the unresolved query; and
-- launching the tray binary again left exactly one `AgentNotify.Tray.exe` process.
+- launching the tray binary again left exactly one `Nokoo.Tray.exe` process.
 
 The smoke notification was resolved, the process was stopped, and the temporary binaries were removed.
 
@@ -343,7 +475,7 @@ Direct Linux `curl` in this WSL configuration could not reach the Windows loopba
 The packaged installer was launched from the Windows `D:` filesystem. Process inspection confirmed:
 
 ```text
-Main window title: Install AgentNotify
+Main window title: Install Nokoo
 Main window handle: nonzero
 Responding: true
 ```
@@ -355,20 +487,20 @@ The process was then stopped without installing, and the temporary copy was remo
 The packaged installer was run with explicit license acceptance into a temporary `D:` directory:
 
 ```text
---silent --accept-license --install-dir <temporary>\AgentNotify --no-startup
+--silent --accept-license --install-dir <temporary>\Nokoo --no-startup
 ```
 
 Verified installed outputs:
 
-- `AgentNotify.Tray.exe`
-- `agentnotify.exe`
+- `Nokoo.Tray.exe`
+- `nokoo.exe`
 - generated `GettingStarted.html` with no unreplaced skill placeholder
 - valid `SKILL.md`
 - `LICENSE.txt`
 - `THIRD_PARTY_NOTICES.txt`
 - `uninstall.ps1`
 
-The installed CLI returned `agentnotify 0.0.1-alpha.1`. The Windows uninstall registry entry reported AgentNotify, version 0.0.1-alpha.1, and publisher Kabani Tech Private Limited. Running the registered uninstall script removed the known files and uninstall registration. The temporary test directory was then removed.
+The installed CLI returned `nokoo 0.0.1-alpha.1`. The Windows uninstall registry entry reported Nokoo, version 0.0.1-alpha.1, and publisher Kabani Tech Private Limited. Running the registered uninstall script removed the known files and uninstall registration. The temporary test directory was then removed.
 
 ## Verified by implementation and compilation, not visually inspected
 
@@ -407,7 +539,7 @@ Documentation gates for this branch:
 - `./scripts/build.sh` — full Windows Release build, required even for documentation branches by repository workflow.
 - `./scripts/test.sh` — full automated suite, required before merge.
 - `./scripts/build-site.sh` — static documentation site build.
-- `quick_validate.py distribution/agentnotify` — skill remains valid; the skill was not modified.
+- `quick_validate.py distribution/nokoo` — skill remains valid; the skill was not modified.
 
 ## Settings readability and window chrome — 2026-08-12
 
@@ -416,7 +548,7 @@ which paint system-black text. Against the dark settings background this made
 labels, checkbox captions, tab headers, and list contents effectively
 unreadable, and the empty provider/route lists rendered as blank white boxes.
 
-`src/AgentNotify.App/Theme.xaml` now restates every control the settings
+`src/Nokoo.App/Theme.xaml` now restates every control the settings
 surfaces use. It is merged into `SettingsWindow` only, so toast and
 notification-center visuals are deliberately untouched.
 
@@ -447,7 +579,7 @@ Not yet performed — still requires a human at a Windows desktop:
 Four original tones (`chime.wav`, `ping.wav`, `alert.wav`, `knock.wav`) were
 synthesised for this project and released under CC0, so the app ships with
 usable sound out of the box and nothing third-party is redistributed. They are
-embedded in `AgentNotify.Tray` and seeded into the managed sound directory on
+embedded in `Nokoo.Tray` and seeded into the managed sound directory on
 first construction of `NotificationSoundService`; seeding is idempotent and
 never overwrites an existing file of the same name. Users can still import
 their own WAV/MP3 files, which is unchanged.
@@ -460,8 +592,8 @@ Automated and mechanical checks performed:
 - `./scripts/package.sh` — installer rebuilt; embedded resources changed, so
   packaging was required. SHA-256
   `bd7c8ac93cea2369438ec857566dd6d5e5c3d3825228ac1f03c56dc6056c446e`.
-- Embedded-resource audit: the built `AgentNotify.Tray.dll` exposes exactly
-  `AgentNotify.Resources.Tones.{chime,ping,alert,knock}.wav`, matching the
+- Embedded-resource audit: the built `Nokoo.Tray.dll` exposes exactly
+  `Nokoo.Resources.Tones.{chime,ping,alert,knock}.wav`, matching the
   names `NotificationSoundService` looks up. Each was extracted from the
   assembly through the reflection path the app itself uses and confirmed to
   carry a valid `RIFF`/`WAVE` header and to be byte-identical (SHA-256) to the
@@ -482,29 +614,29 @@ Not yet performed — still requires a human at a Windows desktop:
 
 ### What was actually run
 
-WSL is a real Linux x64 userland, so a `linux-x64` self-contained publish of `agentnotifyd` and
-`agentnotify` runs natively here. The Linux broker was therefore exercised for real, not only
+WSL is a real Linux x64 userland, so a `linux-x64` self-contained publish of `nokood` and
+`nokoo` runs natively here. The Linux broker was therefore exercised for real, not only
 compiled.
 
 - `./scripts/build.sh` — 0 warnings, 0 errors, including the two new projects.
 - `./scripts/test.sh` — 619 passed, 0 failed (601 previous plus 18 new cross-platform and desktop
   notifier tests).
-- Cross-compilation of `AgentNotify.Cli` for `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`
-  succeeded, as did `AgentNotify.Host` for `linux-x64`.
-- The published Linux `agentnotify` binary is an ELF executable, runs in WSL, reports its version,
+- Cross-compilation of `Nokoo.Cli` for `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`
+  succeeded, as did `Nokoo.Host` for `linux-x64`.
+- The published Linux `nokoo` binary is an ELF executable, runs in WSL, reports its version,
   extracts and loads the native `libe_sqlite3.so`, and fails with a clean message and exit code 1
   when no broker is listening.
-- `agentnotifyd` was started in WSL against an isolated `HOME`. It reported the key-file protection
+- `nokood` was started in WSL against an isolated `HOME`. It reported the key-file protection
   and console notifier, created its data directory, and served the API.
 - End-to-end through the Linux CLI against the Linux broker: `health` returned `ok`; `send`
   created an `input_required` notification and printed the DTO; a second `send` with the same
   `--key` updated the existing row in place rather than creating a duplicate; `list` showed one
   row; `resolve` moved it to `resolved`. The console notifier printed the attention line.
 - File permissions on real Linux files: the data directory is `drwx------`, and `config.json`,
-  `agentnotify.db`, and `secret.key` are `-rw-------`.
-- Single instance: a second `agentnotifyd` against the same data directory refused to start with a
+  `nokoo.db`, and `secret.key` are `-rw-------`.
+- Single instance: a second `nokood` against the same data directory refused to start with a
   clear message and exit code 1, and started successfully once the first had exited.
-- `SIGTERM` handling: the broker printed `Stopping…`, logged `agentnotifyd stopped`, and exited
+- `SIGTERM` handling: the broker printed `Stopping…`, logged `nokood stopped`, and exited
   within one second with a normal exit status.
 
 ### Three defects that only running it exposed
@@ -512,7 +644,7 @@ compiled.
 1. **Local state could land in the working directory.** On Unix
    `Environment.GetFolderPath(LocalApplicationData)` returns an empty string when the base
    directory does not exist yet, which is the normal state of a fresh account. The empty string
-   combined to the relative path `AgentNotify`, so the first run wrote `config.json` — containing
+   combined to the relative path `Nokoo`, so the first run wrote `config.json` — containing
    the local bearer token — plus `secret.key` and the history database into whatever directory the
    broker was started from. In this repository that was the checkout itself. `DefaultConfigDir`
    now resolves through `SpecialFolderOption.Create`, then `XDG_DATA_HOME`, then `$HOME`, and
@@ -540,7 +672,7 @@ compiled.
 
 ## Cross-platform Phase 3 (`feature/cross-platform-release`)
 
-- `./scripts/publish-cross.sh linux-x64` produced `agentnotify-linux-x64.tar.gz` and a
+- `./scripts/publish-cross.sh linux-x64` produced `nokoo-linux-x64.tar.gz` and a
   `SHA256SUMS.txt`. The archive was extracted and both binaries inside it ran and reported version
   `0.0.1-alpha.1`, so the released artefact — not just a build output — is known to work on Linux.
 - `./scripts/publish-cross.sh linux-x64 osx-arm64` produced both archives.
@@ -570,13 +702,13 @@ of `C:\outside\global.MP3` therefore passed through sanitizing unchanged on Unix
 that a configured sound is a bare file name inside the managed sounds directory did not hold there.
 Configuration is portable between machines, so the same `config.json` must normalize identically on
 every platform. `SafeFileName.Last` now strips both separators and any volume prefix using plain
-string operations, and the three call sites in `AgentNotifyConfig` and `ManagedSoundStore` use it.
+string operations, and the three call sites in `NokooConfig` and `ManagedSoundStore` use it.
 
 Verified:
 
 - 628 tests pass on Windows (619 previous plus 9 covering platform-independent normalization).
 - On real Linux: a `config.json` hand-written with `"defaultSoundFile": "C:\\outside\\global.MP3"`
-  and `"input_required": "..\\attention.wav"` was loaded by the Linux `agentnotifyd`, which rewrote
+  and `"input_required": "..\\attention.wav"` was loaded by the Linux `nokood`, which rewrote
   the file with `global.MP3` and `attention.wav`. This exercises the fix through the running broker
   rather than through the test host.
 
@@ -604,7 +736,7 @@ the file-name sanitizing fix. Remaining results from that run:
 
 - **ubuntu-latest passed the broker smoke test outright**: the headless broker started, `/v1/health`
   returned `ok`, a notification was created through the API, a second post with the same key
-  returned the same id, `config.json` and `agentnotify.db` were mode `600`, and the broker stopped
+  returned the same id, `config.json` and `nokoo.db` were mode `600`, and the broker stopped
   cleanly on `SIGTERM`. This is independent confirmation, on a machine that is not WSL, of the
   behaviour recorded earlier.
 - **macos-latest reported `secrets: macOS login keychain`**. The Keychain key store therefore runs
@@ -686,7 +818,7 @@ GitHub answered the asset upload with a 404 that masked a permissions failure. A
 authenticated as `Akash97p`, the archives were uploaded to the existing release rather than
 retagging.
 
-Verified against the published release, not the local build: `agentnotify-linux-x64.tar.gz` was
+Verified against the published release, not the local build: `nokoo-linux-x64.tar.gz` was
 downloaded back from GitHub, its SHA-256 checked against the published `SHA256SUMS-portable.txt`,
 and both binaries extracted from it ran and reported `0.0.2-alpha.1`.
 
@@ -735,7 +867,7 @@ its fields without closing the application must be confirmed by the owner on Win
 
 ## About section (`feature/about-section`)
 
-Adds an About tab to the Settings window and an "About AgentNotify" tray menu entry that opens it.
+Adds an About tab to the Settings window and an "About Nokoo" tray menu entry that opens it.
 The tab shows the app icon, name, version read from assembly metadata, a prerelease warning shown
 only when the version carries a suffix, a description of the product, a local-first summary, links
 to the repository/documentation/releases/issues, the per-user data directory, a warning that
@@ -770,7 +902,7 @@ first attempt; the four normal-priority ones correctly stayed local, exercising 
 minimum-priority filter.
 
 Documentation was swept for machine-specific paths and version drift: personal filesystem paths were
-replaced with `/path/to/agent-notify`, and every current-version reference and test count now matches
+replaced with `/path/to/nokoo`, and every current-version reference and test count now matches
 the released version. Historical version references in `RELEASING.md` and `CHANGELOG.md` are left as
 written, since they record what was published at the time.
 
@@ -806,7 +938,7 @@ Local verification on 2026-08-26:
 - CLI coverage installs the embedded skill for Codex and Claude Code, exercises both command forms,
   protects changed files unless forced, and verifies dry-run behavior.
 - The skill-creator `quick_validate.py` check reported `Skill is valid!` for
-  `distribution/agentnotify`.
+  `distribution/nokoo`.
 - `./scripts/build-site.sh`, JSON Schema parsing, and the generated event/schema/skill page checks
   completed successfully.
 
@@ -825,7 +957,7 @@ Hosted verification on topic commit `d265ac0`:
 Documentation Actions run
 [`32893126444`](https://github.com/Akash97p/agent-notify/actions/runs/32893126444) deployed the site
 successfully. Direct HTTPS checks returned `200` for the then-current event documentation, JSON
-Schema, and [agent skill guide](https://akash97p.github.io/agent-notify/docs/agent-skills.html).
+Schema, and [agent skill guide](https://nokoo.ai/docs/agent-skills.html).
 
 No WPF visual behavior changed, and no new visual check is claimed.
 
@@ -839,9 +971,9 @@ Local verification on 2026-08-26:
 - `./scripts/test.sh --no-restore` passed 666 tests with 0 failures and 0 skips. The 17 focused ARC
   cases cover authentication, all request-kind defaults, strict field handling, vendor extensions,
   immutable replay after resolution, one-time outbound enqueueing, active-only updates, idempotent
-  resolution, missing conditions, and AgentNotify presentation projection.
+  resolution, missing conditions, and Nokoo presentation projection.
 - `./scripts/build-site.sh` generated the complete documentation set, including ARC, and
-  `python3 -m json.tool src/AgentNotify.Protocol/Schemas/arc-0.1.schema.json` parsed the published
+  `python3 -m json.tool src/Nokoo.Protocol/Schemas/arc-0.1.schema.json` parsed the published
   schema successfully.
 - `git diff --check` passed, and a case-insensitive repository/site scan found no superseded protocol
   name or field references in the current tree.
@@ -864,7 +996,7 @@ Local verification on 2026-08-26:
   at `_site/schemas/arc-0.1.schema.json` is byte-identical to the protocol project source.
 - `npm audit --prefix site --audit-level=high` reported zero known vulnerabilities. A semantic scan
   of the current source and generated site found no reference to the superseded protocol name.
-- The generated site was served from its real `/agent-notify/` base path and inspected in headless
+- The generated site was served from its real `/nokoo/` base path and inspected in headless
   Google Chrome. Landing-page renders at 1440x1200 and 390x844 preserve hierarchy and do not overflow;
   ARC renders at 1440x1100 and 390x844 show the desktop navigation/TOC and responsive documentation
   menu respectively. This is an actual browser render check, not an inference from generated HTML.
@@ -887,7 +1019,7 @@ Local verification on 2026-08-26:
   contains 16, 32, and 48-pixel images. The Android, Apple touch, and standalone favicon PNGs have the
   exact dimensions declared by their filenames and manifest.
 - `./scripts/build-site.sh` passed and generated all 21 routes. The export was served under the real
-  `/agent-notify/` base path and inspected in Google Chrome at 1440x900 and 390x844. The new mark is
+  `/nokoo/` base path and inspected in Google Chrome at 1440x900 and 390x844. The new mark is
   sharp, aligned with the header text, readable at navigation size, and consistent with the black/white UI.
 - `./scripts/build.sh -p:EnableWindowsTargeting=true` completed with 0 warnings and 0 errors, including
   the WPF tray, CLI, setup project, and their icon resource metadata. `./scripts/test.sh --no-restore`
@@ -919,7 +1051,7 @@ Local verification on 2026-08-26:
 - Settings, channel management, Notification Center, toasts, and Setup retain every behavior-bearing
   `x:Name`, selection handler, click handler, and binding referenced by their code-behind. The redesign is
   confined to presentation plus minimize/maximize helpers for the new custom title bars.
-- Targeted Release builds of `AgentNotify.App` and `AgentNotify.Setup` passed with 0 warnings and 0 errors,
+- Targeted Release builds of `Nokoo.App` and `Nokoo.Setup` passed with 0 warnings and 0 errors,
   proving the XAML resources, control templates, WindowChrome declarations, packed icon URIs, and event
   handlers compile. The subsequent full solution Release build also passed with 0 warnings and 0 errors.
 - `./scripts/test.sh --no-restore` passed all 666 tests with 0 failures and 0 skips.
@@ -952,14 +1084,14 @@ Local verification on 2026-08-31:
   cross-origin browser URL rejection, HTTP/localhost policy, exception credential redaction,
   cancellation before a poll, discovery, and installation verification.
 - `./scripts/package.sh` rebuilt the self-contained tray, CLI, and setup payload and created
-  `artifacts/AgentNotifySetup.exe` with SHA-256
+  `artifacts/NokooSetup.exe` with SHA-256
   `b9ff26b2b800ce58b331a27c57482361c75f134dc88b155e78936de47f1f0b9e`. Packaging succeeded but
   emitted the existing IL3000 single-file warning at `SettingsWindow.xaml.cs` for
   `Assembly.Location`; this branch did not introduce that line.
-- `python3 /home/akash/.codex/skills/.system/skill-creator/scripts/quick_validate.py distribution/agentnotify`
+- `python3 /home/akash/.codex/skills/.system/skill-creator/scripts/quick_validate.py distribution/nokoo`
   reported `Skill is valid!`.
 - The packaged Windows CLI was launched through Windows PowerShell from the WSL workspace.
-  `agentnotify.exe relay --help` printed the new command reference and exited `0`; a no-network
+  `nokoo.exe relay --help` printed the new command reference and exited `0`; a no-network
   validation smoke with `relay pair --url http://relay.example.com` rejected non-local HTTP and
   exited `1`.
 - `git diff --check` passed. The default Relay UI source contains no credential value, and fake-handler
@@ -986,7 +1118,7 @@ Local verification on 2026-08-31:
 - `./scripts/build.sh` completed the full Release solution build, including WPF XAML, with 0 warnings and
   0 errors. `./scripts/test.sh --no-restore` passed all 710 tests with 0 failures and 0 skips.
 - `./scripts/package.sh` rebuilt the Windows application and installer. The resulting
-  `artifacts/AgentNotifySetup.exe` SHA-256 is
+  `artifacts/NokooSetup.exe` SHA-256 is
   `7d617019d08abc3383bcaff9b4fdbee15ef9454efd26473f3a171be3860a8689`. Publish emitted only the existing
   `SettingsWindow.xaml.cs` IL3000 warning about `Assembly.Location` in a single-file app.
 - `git diff --check` passed. The distributable skill was unchanged, so skill validation was not required.
@@ -1005,7 +1137,7 @@ Manual report on 2026-09-03:
 - This supersedes the earlier statement that no phone client existed. The Android receiver now
   exists.
 
-This AgentNotify documentation branch did not repeat the device test, inspect the phone, or capture a
+This Nokoo documentation branch did not repeat the device test, inspect the phone, or capture a
 step-by-step pairing/delivery/decryption/acknowledgement log. Treat the result as an owner-performed
 integration confirmation, not as an independently reproduced security or compatibility audit.
 
@@ -1030,12 +1162,12 @@ pinned host version.
 ## First real-Mac hardware verification (`docs/mac-hardware-verification`)
 
 Verified on 2026-09-04 on owner hardware: Intel i5-10400H, macOS 26.6.2, running the
-extracted `agentnotify-osx-x64` archive (CLI and broker both report `0.0.4-alpha.1`).
+extracted `nokoo-osx-x64` archive (CLI and broker both report `0.0.4-alpha.1`).
 This is the first time the macOS build has run outside CI, and the first time the
 `osascript` notifier path has displayed a notification anywhere.
 
 **This was the published `0.0.4-alpha.1` release archive from GitHub, not a build from
-`dev`.** Nothing merged after that tag was present — in particular the AgentNotify Relay
+`dev`.** Nothing merged after that tag was present — in particular the Nokoo Relay
 channel is newer, so its behaviour on macOS remains entirely unobserved. What follows is
 a statement about the released binary and nothing else.
 
@@ -1045,30 +1177,30 @@ Observed:
   (`spctl -a` rejects them, as expected for an unsigned prerelease). One
   `xattr -dr com.apple.quarantine <dir>` cleared execution with no `sudo` required; the
   executable bits were already set. No elevation was needed at any point.
-- `agentnotify --version` and `--help` work immediately after the quarantine clear.
+- `nokoo --version` and `--help` work immediately after the quarantine clear.
 - The broker starts and reports `secrets: macOS login keychain` and
   `notifications: osascript` (`terminal-notifier` is not installed on this machine).
-- A login-keychain entry (service `AgentNotify`, account `provider-secrets`) is created and
+- A login-keychain entry (service `Nokoo`, account `provider-secrets`) is created and
   no `secret.key` fallback file is written, matching the CI-runner behaviour on a real
   login session.
 - End-to-end broker behaviour confirmed against an isolated `--config-dir` on port 47899 and
   against the default data directory on port 47821: `health` returns `ok`, `send` creates,
   a second `send` with the same `--key` returns the same id (keyed dedup), `get`/`list`/`resolve`
-  round-trip, a second broker instance refuses with `AgentNotify is already running for this
-  user`, and `SIGTERM` shuts the broker down cleanly (`agentnotifyd stopped` in the log).
+  round-trip, a second broker instance refuses with `Nokoo is already running for this
+  user`, and `SIGTERM` shuts the broker down cleanly (`nokood stopped` in the log).
 - The listening socket is loopback-only (`TCP 127.0.0.1:47899 (LISTEN)`).
 - Owner-only state confirmed in both directories: data dir `0700`, `config.json` and
-  `agentnotify.db` `0600`, `logs/` `0700`.
+  `nokoo.db` `0600`, `logs/` `0700`.
 - A direct `osascript display notification` banner was shown on screen and confirmed by the
   owner, so the macOS notifier backend is proven end to end for the first time. Sticky
   attention types still degrade to ordinary banners under `osascript`, as documented.
-- Default-path token discovery confirmed by the owner: `agentnotify health` and `send` work
-  with no `--token` flag against the default `~/Library/Application Support/AgentNotify`
+- Default-path token discovery confirmed by the owner: `nokoo health` and `send` work
+  with no `--token` flag against the default `~/Library/Application Support/Nokoo`
   data directory.
 
 Not verified: the `osx-arm64` binary has never executed (no ARM64 hardware); the
 `terminal-notifier` backend path has never run (not installed here); the launchd agent unit
-and `install.sh` have never been exercised end to end; the AgentNotify Relay channel
+and `install.sh` have never been exercised end to end; the Nokoo Relay channel
 postdates the tested archive and has never run on macOS; and the binaries remain
 adhoc-signed, so Gatekeeper quarantine clearing is still required on every fresh download.
 
@@ -1080,23 +1212,23 @@ Verified on 2026-09-10 on the same owner Intel Mac running macOS 26.6.2:
   Unicode ellipsis after each of two unbraced variables as part of the parameter name under
   `set -u`; the script requested the Windows-only `SHA256SUMS.txt` instead of
   `SHA256SUMS-portable.txt`; and GitHub's `/releases/latest` download route returned 404 because all
-  AgentNotify releases are prereleases.
+  Nokoo releases are prereleases.
 - After correcting those defects, `/bin/sh -n scripts/install.sh` passed. An unpinned
-  `./scripts/install.sh` resolved `v0.0.4-alpha.2`, downloaded `agentnotify-osx-x64.tar.gz`, matched
+  `./scripts/install.sh` resolved `v0.0.4-alpha.2`, downloaded `nokoo-osx-x64.tar.gz`, matched
   it against the published portable checksum, and installed both executables to `~/.local/bin`.
-  `agentnotify --version` and `agentnotifyd --version` both reported `0.0.4-alpha.2`.
-- A valid `~/Library/LaunchAgents/dev.agentnotify.broker.plist` was bootstrapped in the user's GUI
+  `nokoo --version` and `nokood --version` both reported `0.0.4-alpha.2`.
+- A valid `~/Library/LaunchAgents/ai.nokoo.broker.plist` was bootstrapped in the user's GUI
   domain. launchd reported the service running, `lsof` showed only `127.0.0.1:47821`, and
-  `agentnotify health` returned `status: ok`, API `v1`, and version `0.0.4-alpha.2`. The broker log
+  `nokoo health` returned `status: ok`, API `v1`, and version `0.0.4-alpha.2`. The broker log
   reported the `osascript` notifier and AES-GCM protection under the macOS login keychain.
-- `agentnotify install-skill codex`, `claude`, and `opencode` installed the bundled skill at
-  `~/.agents/skills/agentnotify`, `~/.claude/skills/agentnotify`, and
-  `~/.config/opencode/skill/agentnotify`. Each installed `SKILL.md` matched the distribution copy;
+- `nokoo install-skill codex`, `claude`, and `opencode` installed the bundled skill at
+  `~/.agents/skills/nokoo`, `~/.claude/skills/nokoo`, and
+  `~/.config/opencode/skill/nokoo`. Each installed `SKILL.md` matched the distribution copy;
   Codex also received `agents/openai.yaml`.
 - Relay configuration was attempted only through read-only discovery. The supplied hostname
   `an.relay.dev.kabnitech.com` returned DNS `NXDOMAIN` from the system resolver and public resolvers
   `1.1.1.1` and `8.8.8.8`. Pairing was therefore not started, and
-  `agentnotify relay status --json` remained `not_configured`.
+  `nokoo relay status --json` remained `not_configured`.
 - `/bin/sh -n scripts/install.sh tests/install-script-test.sh`, the offline mocked-release installer
   check, and `git diff --check` passed locally. `./scripts/build.sh` could not start on this Mac
   because the repository gate intentionally requires a Windows .NET 10 SDK path from WSL; no local
@@ -1111,12 +1243,12 @@ Verified on 2026-09-10 on the same owner Intel Mac running macOS 26.6.2:
 
 The owner corrected the Relay hostname to `https://an.relay.dev.kabanitech.com` during the same
 2026-09-10 session. Public Cloudflare and Google DNS both resolved it to `212.227.243.171`, and its
-`/.well-known/agentnotify-relay` response identified AgentNotify Relay `0.1.0`, API `v1`, envelope
+`/.well-known/nokoo-relay` response identified Nokoo Relay `0.1.0`, API `v1`, envelope
 version `1`, and the experimental opaque-transport capability.
 
-`agentnotify relay pair` completed a real browser approval, verified the returned installation
+`nokoo relay pair` completed a real browser approval, verified the returned installation
 credential, and saved provider **Hosted relay** without printing the credential. A subsequent
-`agentnotify relay status --json` reported `status: connected`, identity `Akashs-MacBook-Pro`, and
+`nokoo relay status --json` reported `status: connected`, identity `Akashs-MacBook-Pro`, and
 `enabled: false`. A boolean scan of broker logs found no `inst_` or `pol_` credential prefix.
 
 The pairing command deliberately saved the new provider disabled. The owner then explicitly asked to
@@ -1124,7 +1256,7 @@ enable it and route all priorities to the connected phone. **All notifications t
 created enabled with minimum priority `Low`, no type/project/agent filters, and
 `include_message: true`. The provider was enabled without changing its encrypted credential.
 
-A `success` test at priority `Low` with key `agent-notify-mac-relay-test` exercised the lowest route
+A `success` test at priority `Low` with key `nokoo-mac-relay-test` exercised the lowest route
 threshold. Its durable outbox row changed from `Processing` to `Delivered`; attempt 1 succeeded with
 HTTP `201` and no error code. This proves the live macOS broker matched the route, sealed the payload,
 and had the hosted Relay accept the envelope. The owner then confirmed that the **Mac Relay test**
@@ -1138,7 +1270,7 @@ repository artifacts.
 ## Release packaging for `v0.0.4-alpha.2`
 
 Built on 2026-09-04 from `chore/release-0.0.4-alpha.2`: Release build 0 warnings / 0 errors,
-738 tests passed, `scripts/package.sh` produced `AgentNotifySetup.exe` with SHA-256
+738 tests passed, `scripts/package.sh` produced `NokooSetup.exe` with SHA-256
 `a4c5c68138a11113469b97c74b292d768020d74f10aaa8b84fe1ad93dc522ac4`.
 
 This is the local packaging run. The tag workflow builds, tests and packages independently
@@ -1151,8 +1283,8 @@ Automated gates (macOS, user-local .NET SDK 10.0.401, `EnableWindowsTargeting=tr
 
 - Full-solution Release build: 0 warnings, 0 errors.
 - Full suite: 763 tests passed (738 baseline + 25 new harness tests), 0 failed.
-- `node --check distribution/harness/opencode/agentnotify.js` passed.
-- `python3 -m py_compile distribution/harness/shared/agentnotify_hook.py` passed, and the
+- `node --check distribution/harness/opencode/nokoo.js` passed.
+- `python3 -m py_compile distribution/harness/shared/nokoo_hook.py` passed, and the
   script exits `0` on a sample permission payload with no broker running.
 - Both `hooks.example.json` (Codex) and `settings.example.json` (Claude Code) parse as JSON.
 - `git diff --check` passed. No WPF surface changed or rendered. Packaging was not rerun:
@@ -1212,8 +1344,8 @@ subprocess call made only on a fallback that needs a live ask session to reach.
 ## Release `v0.1.0-alpha.2` (2026-09-12)
 
 Hosted Windows release workflow succeeded on tag `v0.1.0-alpha.2`: build, full suite,
-packaging, and publication. Published assets: `AgentNotifySetup.exe` (191.77 MB),
-`agentnotify-win-x64.zip`, the four `linux`/`osx` × `x64`/`arm64` portable archives,
+packaging, and publication. Published assets: `NokooSetup.exe` (191.77 MB),
+`nokoo-win-x64.zip`, the four `linux`/`osx` × `x64`/`arm64` portable archives,
 `SHA256SUMS.txt`, `SHA256SUMS-portable.txt`, and `SKILL.md`. The desktop repository's
 CI, Linux/macOS CI, and documentation-site workflows all passed on `main` for the same
 commit.
@@ -1236,7 +1368,7 @@ Observed on the settled interaction: `status: answered`, `source: relay`,
 `device_id: 29f6bad9…`, and a client-generated UUID `response_id` — so the answer came
 off the Relay from the phone, not from the CLI or the local API. Both `allow` and `deny`
 were exercised; `deny` produced
-`{"decision":{"behavior":"deny","message":"Denied via AgentNotify."}}` and `allow`
+`{"decision":{"behavior":"deny","message":"Denied via Nokoo."}}` and `allow`
 produced `{"decision":{"behavior":"allow"}}`.
 
 The fallback path was verified in the same session and is the half that had never been
@@ -1283,7 +1415,7 @@ every layer beneath it works. Tracked in `TODO.md`.
 
 Environment: Intel MacBook Pro (x86_64), macOS, .NET SDK 10.0.401, headless Google Chrome.
 
-- `dotnet build AgentNotify.slnx -c Release -p:EnableWindowsTargeting=true`: succeeded, WPF app
+- `dotnet build Nokoo.slnx -c Release -p:EnableWindowsTargeting=true`: succeeded, WPF app
   and installer included (cross-targeted from macOS; not a Windows run).
 - Full suite: 887 tests passed (842 + 45 new), 0 failed. New: 32 provider-form tests (every
   registered adapter has an editor; builder and reader agree for all nineteen kinds; secret
@@ -1306,8 +1438,8 @@ Environment: Intel MacBook Pro (x86_64), macOS, .NET SDK 10.0.401, headless Goog
 - Interaction from the page: a text answer and a single-choice answer were entered and sent in
   the browser; `GET /v1/interactions?status=answered` showed both with `source: web`.
 - Deployed to this Mac's launchd broker (`osx-x64` publish, ad-hoc re-signed, previous
-  `0.1.0-alpha.2` binaries kept in `~/.local/bin/.agentnotify-backup-0.1.0-alpha.2`). `/ui/`
-  answered 200, `/ui/api/overview` without a session 401, and `agentnotify ui --print` signed a
+  `0.1.0-alpha.2` binaries kept in `~/.local/bin/.nokoo-backup-0.1.0-alpha.2`). `/ui/`
+  answered 200, `/ui/api/overview` without a session 401, and `nokoo ui --print` signed a
   headless browser in; overview, channels (the existing Relay profile, credential shown as
   stored, not revealed) and agents rendered against real data with no console errors. Nothing
   was saved from the page on the real broker.
@@ -1324,10 +1456,10 @@ section.)
 The first cut required a one-time launch link or the pasted token before the page would load. The
 owner rejected that: the Windows app has no password, and a sign-in step on a loopback-only page is
 friction without a matching threat. Removed the launch codes, sessions, cookie, sign-in page, and
-`POST /v1/ui/launch`; `agentnotify ui` now opens the address directly. The host-name allowlist,
+`POST /v1/ui/launch`; `nokoo ui` now opens the address directly. The host-name allowlist,
 the required header and same-origin `Origin` on changes, the CSP, and write-only secrets remain.
 
-- `dotnet build AgentNotify.slnx -c Release -p:EnableWindowsTargeting=true`: succeeded, 0 warnings.
+- `dotnet build Nokoo.slnx -c Release -p:EnableWindowsTargeting=true`: succeeded, 0 warnings.
 - Full suite: 884 passed (887 − 4 sign-in tests + 1 test that the page needs no token while `/v1`
   still does), 0 failed.
 - Deployed to this Mac's launchd broker: `/ui/` and `/ui/api/overview` answered 200 with no token,
@@ -1340,7 +1472,7 @@ the required header and same-origin `Origin` on changes, the CSP, and write-only
 
 Automated checks on the owner's Intel Mac with .NET SDK 10.0.401:
 
-- `dotnet build AgentNotify.slnx -c Release -p:EnableWindowsTargeting=true --no-restore`
+- `dotnet build Nokoo.slnx -c Release -p:EnableWindowsTargeting=true --no-restore`
   succeeded with 0 warnings and 0 errors, including the Windows-targeted projects.
 - The full test suite passed: 888 passed, 0 failed, 0 skipped. The new fixture tests cover
   malformed Claude lines, duplicate Claude assistant responses, cumulative and unchanged Codex
@@ -1359,8 +1491,8 @@ Live local checks:
   screenshot at 1440 px showed the Usage page and its tables/charts rendering with real data.
   This was a browser rendering check, not a human visual review.
 - A self-contained `osx-x64` broker was published and ad-hoc signed; `codesign --verify` and
-  `agentnotifyd --version` passed. The prior installed broker was backed up to
-  `~/.local/bin/.agentnotifyd-backup-local-usage-20260913`, and launchd restarted the updated
+  `nokood --version` passed. The prior installed broker was backed up to
+  `~/.local/bin/.nokood-backup-local-usage-20260913`, and launchd restarted the updated
   broker. On the usual `127.0.0.1:47821` listener, `/ui/api/usage?days=30` returned HTTP 200
   with 16 files and no skips, `/ui/api/overview` returned HTTP 200, and unauthenticated
   `/v1/notifications` still returned HTTP 401.
@@ -1413,7 +1545,7 @@ payload. The price catalog is an explicitly dated counterfactual standard-API es
   as a layout verdict. These are browser rendering checks, not human visual review.
 - The corrected broker was ad-hoc signed and installed on the owner's usual launchd service,
   with the previous binary backed up at
-  `~/.local/bin/.agentnotifyd-backup-usage-opencode-20260913`. On `127.0.0.1:47821`, the 30-day
+  `~/.local/bin/.nokood-backup-usage-opencode-20260913`. On `127.0.0.1:47821`, the 30-day
   Usage API returned all three sources and 34 project groups; overview returned 200 and the agent
   API returned 401 without a bearer token. The response omitted full home paths.
 
@@ -1456,7 +1588,7 @@ packaging and a human browser visual check for this edit remain unverified.
   against a scratch broker returned Codex unavailable; after adding the launcher's bin directory
   to the child process environment, the same restricted-path scratch check returned both Codex
   and Claude windows. The corrected signed standalone binary was installed with the prior broker
-  backed up at `~/.local/bin/.agentnotifyd-backup-live-quota-20260913`. On the normal
+  backed up at `~/.local/bin/.nokood-backup-live-quota-20260913`. On the normal
   `127.0.0.1:47821` listener, `/ui/api/quota` returned Codex and Claude `ok` with two windows
   each and OpenCode `unavailable`; the Usage script lacked the removed banner, overview returned
   200, and unauthenticated `/v1/notifications` returned 401.
@@ -1511,7 +1643,7 @@ quota; the 30-day view is rolling rather than the provider's billing cycle.
   packaging was not needed for this API guard change and was not run.
 - A self-contained `osx-x64` broker publish succeeded, was ad-hoc signed and verified, and replaced
   the installed launchd broker. Its predecessor is backed up at
-  `~/.local/bin/.agentnotifyd-backup-forwarded-port-20260913`. After restart, requests to the live
+  `~/.local/bin/.nokood-backup-forwarded-port-20260913`. After restart, requests to the live
   `127.0.0.1:47821` listener carrying `Host: 127.0.0.1:47822` returned 200 for `/ui/`,
   `/ui/api/quota`, and a same-origin quota-refresh POST. A wrong-port `Origin` returned 403 and a
   foreign `Host` returned 421. The quota response reported Codex and Claude Code `ok` and OpenCode
@@ -1557,7 +1689,7 @@ fork/replay parentage. Session cost remains the same current-rate estimate used 
   Windows SDK path, `/mnt/d/dev/dotnet/dotnet.exe`, is absent; Windows packaging remains a CI gate.
 - A self-contained, ad-hoc-signed `osx-x64` broker containing the new embedded assets was installed
   into the owner's launchd service, with the previous executable saved as
-  `~/.local/bin/.agentnotifyd-backup-insights-dashboard-20260914`. `agentnotify health` returned
+  `~/.local/bin/.nokood-backup-insights-dashboard-20260914`. `nokoo health` returned
   `ok` on `127.0.0.1:47821`. The live Dashboard composed four healthy Codex/Claude profiles,
   OpenCode Go estimates, 30-day local usage, project rankings, and delivery health. The Live quota
   view showed remaining-balance bars whose fill matched the reported remaining percentage. A final
@@ -1598,8 +1730,8 @@ owner's real profiles, or a human visual review of the new layouts.
   immediately restored and confirmed healthy. The corrected publish used the repository release
   flags for native-library embedding and compression, was ad-hoc signed, and started from a
   directory containing only that executable. After installation and launchd restart,
-  `agentnotify health` returned `ok` on `127.0.0.1:47821`. The previous executable is backed up
-  at `~/.local/bin/.agentnotifyd-backup-opencode-go-pricing-20260914`.
+  `nokoo health` returned `ok` on `127.0.0.1:47821`. The previous executable is backed up
+  at `~/.local/bin/.nokood-backup-opencode-go-pricing-20260914`.
 - The live 30-day Usage API reported `pricing_as_of: 2026-09-14`; Live quota reported three
   windows each for the two locally observed Go models. The embedded quota module served the new
   20-model coverage text, and the page returned HTTP 200 with a forwarded browser-side `Host`
@@ -1621,7 +1753,7 @@ need future local usage before they appear as model cards.
   confirmed that internal links from the exported landing and guide pages resolve and that the
   landing, WebUI, and bidirectional guide contain the updated claims. `git diff --check` passed.
 - A native macOS .NET 10 Release solution build passed with 0 warnings and 0 errors. The full
-  `AgentNotify.Tests` suite passed 903 tests, 0 failed, 0 skipped. The repository's WSL
+  `Nokoo.Tests` suite passed 903 tests, 0 failed, 0 skipped. The repository's WSL
   `./scripts/build.sh` and `./scripts/test.sh` could not run on this Mac because their configured
   Windows SDK path, `/mnt/d/dev/dotnet/dotnet.exe`, is absent. Installer packaging was not run;
   this branch changes documentation and the separate GitHub Pages site, not installer payloads.
@@ -1640,11 +1772,11 @@ including the WPF app and the installer, compiles there with `-p:EnableWindowsTa
 
 Performed:
 
-- `dotnet build AgentNotify.slnx -c Release -p:EnableWindowsTargeting=true` — **succeeded, 0 warnings,
-  0 errors**, covering `AgentNotify.App` and `AgentNotify.Setup`. This is a compile of the WPF
+- `dotnet build Nokoo.slnx -c Release -p:EnableWindowsTargeting=true` — **succeeded, 0 warnings,
+  0 errors**, covering `Nokoo.App` and `Nokoo.Setup`. This is a compile of the WPF
   project including XAML markup compilation, so the removed `RelayDeploymentBox` and
   `RelayBaseUrlBox` controls leave no dangling `x:Name` reference in the code-behind.
-- `dotnet test tests/AgentNotify.Tests/AgentNotify.Tests.csproj -c Release` — **915 passed, 0 failed**,
+- `dotnet test tests/Nokoo.Tests/Nokoo.Tests.csproj -c Release` — **915 passed, 0 failed**,
   up from 906 before this work.
 - `npm run build` in `site/` — the GitHub Pages export generated all 27 routes, and the built output
   contains no link to any Relay repository.
@@ -1677,12 +1809,12 @@ other workflow on the same commits also passed — CI and CI (Linux and macOS) o
 Published assets and checksums:
 
 ```text
-5ddd439eec47b39e8167d7693b5c5214e5f81b0c37f680bd428604fdd80253ce  AgentNotifySetup.exe
-c62552fd67aa8c3920fe3799fd2f5f64c6d2106bd0b6e89efef4511253ceaf51  agentnotify-linux-arm64.tar.gz
-e9bceab3e2de27373229a946b532937c2c68a39e76beee8a6b89c9b16f913bf5  agentnotify-linux-x64.tar.gz
-1b58e63904dee6ca5aac85624a751ece50e567604d286ee14c547a388112ac60  agentnotify-osx-arm64.tar.gz
-bf334dd04609c460bfee053508976f8afac01bef9f1de91841f866f9707260dc  agentnotify-osx-x64.tar.gz
-890a137070b7f1d0347a666b049df838c94e36f7b4664a95f49855490d6168bb  agentnotify-win-x64.zip
+5ddd439eec47b39e8167d7693b5c5214e5f81b0c37f680bd428604fdd80253ce  NokooSetup.exe
+c62552fd67aa8c3920fe3799fd2f5f64c6d2106bd0b6e89efef4511253ceaf51  nokoo-linux-arm64.tar.gz
+e9bceab3e2de27373229a946b532937c2c68a39e76beee8a6b89c9b16f913bf5  nokoo-linux-x64.tar.gz
+1b58e63904dee6ca5aac85624a751ece50e567604d286ee14c547a388112ac60  nokoo-osx-arm64.tar.gz
+bf334dd04609c460bfee053508976f8afac01bef9f1de91841f866f9707260dc  nokoo-osx-x64.tar.gz
+890a137070b7f1d0347a666b049df838c94e36f7b4664a95f49855490d6168bb  nokoo-win-x64.zip
 ```
 
 Not verified: **nobody has installed or run this build.** The installer was produced and checksummed
@@ -1698,15 +1830,15 @@ nothing here.
 
 Ran:
 
-- `dotnet test tests/AgentNotify.Tests/AgentNotify.Tests.csproj -c Release` — **933 passed, 0 failed,
+- `dotnet test tests/Nokoo.Tests/Nokoo.Tests.csproj -c Release` — **933 passed, 0 failed,
   0 skipped**, up from 915 on `dev` on the same machine. New coverage: share-path parsing, UTF-8 and
   UTF-16 `wsl --list` output, `/etc/passwd` home lookup, usage from a fake WSL home including a Linux
   project path and a distribution that stops, discovered/hand-added/renamed WSL quota accounts,
   label normalization, the skills-root home override, the Codex-in-WSL start arguments and
   `WSLENV`, and web interface skill installs by distribution name (including a stopped one).
-- Release builds of `AgentNotify.Tests`, `AgentNotify.Host`, `AgentNotify.Cli`, and
-  `AgentNotify.App` (`-p:EnableWindowsTargeting=true`) — **0 warnings, 0 errors**.
-- `node --check` on the four edited web interface modules and `bash -n scripts/agentnotify`.
+- Release builds of `Nokoo.Tests`, `Nokoo.Host`, `Nokoo.Cli`, and
+  `Nokoo.App` (`-p:EnableWindowsTargeting=true`) — **0 warnings, 0 errors**.
+- `node --check` on the four edited web interface modules and `bash -n scripts/nokoo`.
 
 Not verified — none of this has run on Windows or WSL:
 
@@ -1727,18 +1859,18 @@ WSL in this session, so the repository scripts were not used.
 
 Ran:
 
-- `dotnet build src/AgentNotify.Setup/AgentNotify.Setup.csproj -c Release -p:EnableWindowsTargeting=true`
+- `dotnet build src/Nokoo.Setup/Nokoo.Setup.csproj -c Release -p:EnableWindowsTargeting=true`
   — **0 warnings, 0 errors**, including XAML markup compilation of the renamed/new `x:Name` elements.
-- `dotnet build src/AgentNotify.App/AgentNotify.App.csproj -c Release -p:EnableWindowsTargeting=true`
+- `dotnet build src/Nokoo.App/Nokoo.App.csproj -c Release -p:EnableWindowsTargeting=true`
   — **0 warnings, 0 errors**.
 
 Not verified — none of this has run on Windows:
 
 - Update detection from the uninstall registration, the update-mode window layout (collapsed licence
   panel, read-only folder, version line), and the finish/relaunch actions.
-- That the tray receives `Local\AgentNotify.Exit.v1` and exits cleanly, and the kill fallback
+- That the tray receives `Local\Nokoo.Exit.v1` and exits cleanly, and the kill fallback
   against an alpha.3 tray that has no such event.
-- Renaming an in-use `agentnotify.exe` during an update, and deleting the `.old` leftover on the next
+- Renaming an in-use `nokoo.exe` during an update, and deleting the `.old` leftover on the next
   install and in `uninstall.ps1`.
 - Silent update, relaunch, and `--no-launch`.
 - Packaging was not run, so no installer containing this change exists yet.
@@ -1751,7 +1883,7 @@ at `/mnt/d/dev/dotnet/dotnet.exe`. The distribution sets its user through `/etc/
 
 At `a19304e` (`dev`) the repository scripts ran: `scripts/build.sh` **0 warnings, 0 errors**,
 `scripts/test.sh` **933 passed, 0 failed, 0 skipped**, and `scripts/package.sh` produced
-`artifacts/AgentNotifySetup.exe`. The owner installed that build and reported:
+`artifacts/NokooSetup.exe`. The owner installed that build and reported:
 
 - Adding `\\wsl.localhost\Ubuntu-20.04\home\akash\.codex` and `...\.claude` by hand on Live quota
   worked; both cards showed **Live** with real 5-hour and 7-day balances, so Codex's app server ran
@@ -1761,12 +1893,12 @@ At `a19304e` (`dev`) the repository scripts ran: `scripts/build.sh` **0 warnings
 
 Cause, confirmed on this machine: `wsl.exe --list --running --quiet` does list `Ubuntu-20.04` (as
 UTF-16LE without a byte-order mark, which the parser handles), but discovery took the home of
-`DefaultUid` `0`, `/root`. The installed `agentnotify.exe install-skill claude --wsl Ubuntu-20.04
---dry-run` reported `\\wsl.localhost\Ubuntu-20.04\root\.claude\skills\agentnotify`.
+`DefaultUid` `0`, `/root`. The installed `nokoo.exe install-skill claude --wsl Ubuntu-20.04
+--dry-run` reported `\\wsl.localhost\Ubuntu-20.04\root\.claude\skills\nokoo`.
 
 After the fix (default user read from `/etc/wsl.conf`, falling back to `DefaultUid`) the same
 dry run from the fixed CLI build reported
-`\\wsl.localhost\Ubuntu-20.04\home\akash\.claude\skills\agentnotify`. `WslTests` pass, including
+`\\wsl.localhost\Ubuntu-20.04\home\akash\.claude\skills\nokoo`. `WslTests` pass, including
 new `wsl.conf` parsing and passwd lookup by name.
 
 Not verified yet: discovered quota cards and WSL usage in an installed build with this fix, and a
@@ -1788,7 +1920,7 @@ Ran:
 
 Not verified: the Manage accounts layout (desktop and narrow widths) has not been looked at in a
 browser, and the installed build has not yet shown discovered WSL cards or WSL usage. Packaging
-produced a new `artifacts/AgentNotifySetup.exe` for the owner to test.
+produced a new `artifacts/NokooSetup.exe` for the owner to test.
 
 ## OpenCode usage over the WSL share (`fix/opencode-usage-over-wsl`, 2026-09-17)
 
@@ -1803,7 +1935,7 @@ answered in milliseconds. Reading the whole database sequentially through `\\wsl
 repeated on every request (JSONL results were already cached). That installed build also reported
 `files_skipped: 1` and no OpenCode source at all: the query was failing.
 
-The fixed `agentnotifyd` was run from the build output on port 47899 with a throwaway
+The fixed `nokood` was run from the build output on port 47899 with a throwaway
 `--config-dir`, next to the installed tray:
 
 - `/usage?days=30`: **62 s** cold (JSONL parsing), then **0.45 s** and **0.40 s**. `/quota`: 2.2 s
@@ -1843,7 +1975,7 @@ Ran:
 - An independent Python recount inside WSL matched the fixed broker exactly for Muse Code
   (9,571 calls, 1,037,211,966 tokens) and Gemini CLI (325 messages, 17,524,462 tokens); Kilo differed
   by 143,839 tokens from a recount taken minutes earlier while Kilo was in use.
-- `agentnotifyd` from the build output on port 47899, `/ui/api/usage?days=all`: before the listing
+- `nokood` from the build output on port 47899, `/ui/api/usage?days=all`: before the listing
   and buffer changes, **401 s** cold and **9.9 s** warm (walking 6,699 Muse files through the share
   alone took 10.4 s). After them, **132 s** cold, then **1.06 s** and **0.82 s**, with identical
   totals: 48,660 events, 7,064 files, nothing skipped, **$2,535.94** API-equivalent (was $1,441.76
@@ -1905,7 +2037,7 @@ the fixes `scripts/test.sh` passed **1,037 of 1,037** on the branch.
 
 Prepared on `dev` (`chore: prepare v0.1.0-alpha.4`) after `scripts/build.sh` (0 warnings, 0 errors),
 `scripts/test.sh` (1,050 passed), and `scripts/package.sh` on the Windows host; the local CLI reported
-`agentnotify 0.1.0-alpha.4` and the local installer SHA-256 was
+`nokoo 0.1.0-alpha.4` and the local installer SHA-256 was
 `d8b94ac5c1f1d98c4dd2cc8dfca138ff33ae508df3d3e61c9943823bfe89df46`. `scripts/release-notes.sh
 v0.1.0-alpha.4 v0.1.0-alpha.3` produced the notes. The skill validator was not run (its script path
 is not configured on this machine); the distributable skill did not change in this release.
@@ -1916,8 +2048,8 @@ pushed with `dev`; `main` was then fast-forwarded to `dev` at `8d405bd`. GitHub 
 - Release run [35237072846](https://github.com/Akash97p/agent-notify/actions/runs/35237072846) —
   `package-and-release` and `cross-platform-assets` succeeded, publishing the
   [prerelease](https://github.com/Akash97p/agent-notify/releases/tag/v0.1.0-alpha.4) at
-  2026-09-17T15:01:18Z with `AgentNotifySetup.exe`, `SHA256SUMS.txt`, `SKILL.md`,
-  `agentnotify-win-x64.zip`, `agentnotify-{linux,osx}-{x64,arm64}.tar.gz`, and
+  2026-09-17T15:01:18Z with `NokooSetup.exe`, `SHA256SUMS.txt`, `SKILL.md`,
+  `nokoo-win-x64.zip`, `nokoo-{linux,osx}-{x64,arm64}.tar.gz`, and
   `SHA256SUMS-portable.txt`.
 - CI and CI (Linux and macOS) succeeded on `dev` and `main` at `8d405bd` and on `main` at
   `3887844`; the documentation site workflow succeeded on both branches.
@@ -1928,14 +2060,14 @@ checksum was not compared with the local one (hosted and local builds are not by
 ## Provider router (`feature/provider-router`, 2026-09-17)
 
 Automated: the full suite passes on this MacBook (macOS 26.6.2, .NET SDK 10.0.401, run through
-`scripts/test.sh` with `AGENTNOTIFY_DOTNET_EXE` pointing at `~/.dotnet/dotnet`) — **1,185 passed, 0
+`scripts/test.sh` with `NOKOO_DOTNET_EXE` pointing at `~/.dotnet/dotnet`) — **1,185 passed, 0
 failed, 0 skipped**, up from 1,050 before the branch. The new tests cover the repository and
 configuration service, route resolution precedence, base-URL destination rules, all three request
 decoders and encoders, the three SSE parsers fed byte-by-byte and whole, the three stream writers
 round-tripped through their own parsers, non-streaming translation for every wire, failover,
 cooldowns, `Retry-After`, mid-stream failures, and the loopback/auth/CSRF guards on `/router/v1`.
 
-Live end-to-end on this machine, with `agentnotifyd` on port 47822 and a scripted fake
+Live end-to-end on this machine, with `nokood` on port 47822 and a scripted fake
 chat-completions upstream:
 
 - A Codex-shaped streaming `POST /router/v1/responses` against `combo/coding`, whose first target was
@@ -2003,17 +2135,17 @@ regions, duplicate-key avoidance, restoring the owner's values, JSON merging, th
 of invalid JSON and unknown selectors, the catalogue refresh after router changes, and restoring kept
 copies.
 
-**Live, with the real agents** — `agentnotifyd` on port 47823 with `AGENTNOTIFY_AGENT_HOME` pointed at
+**Live, with the real agents** — `nokood` on port 47823 with `NOKOO_AGENT_HOME` pointed at
 a throwaway home holding a Codex `config.toml` (own model, effort, approval policy, a project table)
 and a Claude Code `settings.json` (own model and env), and a scripted chat-completions upstream:
 
 - Connecting both through `POST /ui/api/router/agents/{id}/connect` wrote the managed regions, the
   catalogue, the subagent/review/effort keys, the Claude `modelPicker` rows and `env` block, and kept a
   copy of each file first.
-- `codex doctor` with that `CODEX_HOME` reported `config.toml parse ok` and `model coding · agentnotify`.
-- `codex exec` ran a whole agent turn through the router: `model: coding`, `provider: agentnotify`.
+- `codex doctor` with that `CODEX_HOME` reported `config.toml parse ok` and `model coding · nokoo`.
+- `codex exec` ran a whole agent turn through the router: `model: coding`, `provider: nokoo`.
   The routed model's streamed text reached Codex, its tool call came back through translation, and
-  **Codex executed it** (`/bin/zsh -lc 'echo routed-through-agentnotify'` — succeeded), sent the
+  **Codex executed it** (`/bin/zsh -lc 'echo routed-through-nokoo'` — succeeded), sent the
   result back through the router, and finished with the model's final text.
 - `claude -p … --model fake/fake-model-a` with that `CLAUDE_CONFIG_DIR` ran through the router with no
   login: three upstream requests, and one of them used the model mapped to the background slot, which
@@ -2033,7 +2165,7 @@ selectors, which is why the `modelPicker` rows now carry `behavesAs`.
 
 Not verified: the Agents page itself has not been seen in a browser (the extension was unavailable),
 no real provider was involved, only macOS was used, and the Windows tray build was not compiled.
-Claude Code rewrote its own `model` setting to `opus[1m]` during the run — its doing, not AgentNotify's,
+Claude Code rewrote its own `model` setting to `opus[1m]` during the run — its doing, not Nokoo's,
 but a reminder that the host edits these files too.
 
 ## v0.2.0-alpha.1 release (2026-09-18)
@@ -2041,19 +2173,19 @@ but a reminder that the host edits these files too.
 Tagged `v0.2.0-alpha.1` on `main` at `9400931` (`merge: release v0.2.0-alpha.1 to main`) and pushed
 with `dev`. The minor version moved from the 0.1 alpha series to 0.2 because the provider router is a
 new capability. Before tagging, the full suite passed on macOS (1,203 passed, 0 failed) and the CLI
-reported `agentnotify 0.2.0-alpha.1`; local Windows packaging was not run on this Mac, so the hosted
+reported `nokoo 0.2.0-alpha.1`; local Windows packaging was not run on this Mac, so the hosted
 workflow is the only build of the installer.
 
 - Release run [35306674488](https://github.com/Akash97p/agent-notify/actions/runs/35306674488)
   succeeded and published the
   [prerelease](https://github.com/Akash97p/agent-notify/releases/tag/v0.2.0-alpha.1) at
-  2026-09-18T04:25:49Z with `AgentNotifySetup.exe`, `SHA256SUMS.txt`, `SKILL.md`,
-  `agentnotify-win-x64.zip`, `agentnotify-{linux,osx}-{x64,arm64}.tar.gz`, and
+  2026-09-18T04:25:49Z with `NokooSetup.exe`, `SHA256SUMS.txt`, `SKILL.md`,
+  `nokoo-win-x64.zip`, `nokoo-{linux,osx}-{x64,arm64}.tar.gz`, and
   `SHA256SUMS-portable.txt`.
 - **Installed on the owner's Intel MacBook from the published release**, replacing
   `0.1.0-alpha.2`: the broker's launchd job was stopped, `scripts/install.sh` with
-  `AGENTNOTIFY_VERSION=v0.2.0-alpha.1` downloaded `agentnotify-osx-x64.tar.gz` and verified its
-  checksum, and the job was started again. `agentnotify --version`, `agentnotifyd --version`, and
+  `NOKOO_VERSION=v0.2.0-alpha.1` downloaded `nokoo-osx-x64.tar.gz` and verified its
+  checksum, and the job was started again. `nokoo --version`, `nokood --version`, and
   `/v1/health` all report `0.2.0-alpha.1`; the 139 existing active notifications were still there;
   the router answers `404 router_disabled` until it is turned on; the four Model router pages are
   served; and both Codex and Claude Code are detected, waiting only for an upstream to be added.
@@ -2064,7 +2196,7 @@ routed through the installed broker yet.
 ## One-step providers and subscriptions (`feature/router-easy-setup`, 2026-09-18)
 
 On the owner's Intel MacBook, macOS SDK `~/.dotnet` 10.0.401 through the repository scripts
-(`AGENTNOTIFY_DOTNET_EXE=~/.dotnet/dotnet`, `-p:EnableWindowsTargeting=true` for the WPF projects):
+(`NOKOO_DOTNET_EXE=~/.dotnet/dotnet`, `-p:EnableWindowsTargeting=true` for the WPF projects):
 
 - `./scripts/build.sh`: 0 warnings, 0 errors. `./scripts/test.sh`: 1,219 passed, 0 failed (16 new:
   presets and per-model wires, the column migration on an older database, discovery shapes and
@@ -2234,16 +2366,16 @@ Verified on the owner's Intel MacBook with macOS 26.6.2, Node 22.18.0/npm 10.9.3
 
 - `git diff --check`: passed.
 - Local Markdown target audit: 47 maintained Markdown files checked; every relative file target
-  exists. The previous broken tracked link to the ignored `artifacts/AgentNotifySetup.exe` was
+  exists. The previous broken tracked link to the ignored `artifacts/NokooSetup.exe` was
   replaced with the tagged prerelease page while retaining the local packaging path as code text.
 - `./scripts/build-site.sh`: passed (`npm ci`, Next type generation, `tsc --noEmit`, and static export;
   30 static pages generated). `_site/docs/{install-with-agent,router,security}/index.html` exist.
 - Both generated schema files exist and are byte-identical to
-  `src/AgentNotify.Protocol/Schemas/arc-{0.1,0.2}.schema.json`.
+  `src/Nokoo.Protocol/Schemas/arc-{0.1,0.2}.schema.json`.
 - Generated-site crawl: 4,585 local links/assets across 57 HTML files; every target exists.
-- `AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh
+- `NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh
   -p:EnableWindowsTargeting=true`: succeeded, 0 warnings and 0 errors.
-- `AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh
+- `NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh
   -p:EnableWindowsTargeting=true`: 1,254 passed, 0 failed, 0 skipped.
 
 Not verified: a human visual review of the changed homepage/navigation at desktop and narrow widths;
@@ -2267,9 +2399,9 @@ and the GitHub Pages sources were updated with the same behavior and platform bo
 Verified on the owner's Intel MacBook:
 
 - Targeted configuration, quota projection, and WebUI tests: 44 passed, 0 failed.
-- `AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh
+- `NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/build.sh
   -p:EnableWindowsTargeting=true`: succeeded, 0 warnings and 0 errors.
-- `AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh
+- `NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh
   -p:EnableWindowsTargeting=true`: 1,257 passed, 0 failed, 0 skipped.
 - `tests/install-script-test.sh`: passed, including installation of the native menu executable.
 - `node --check` passed for the changed Live Quota JavaScript; shell syntax checks passed for the
@@ -2283,9 +2415,9 @@ Verified on the owner's Intel MacBook:
   export; 30 static pages generated). A generated-site crawl checked 4,585 local links/assets across
   57 HTML files, and every target existed.
 - A Markdown target audit checked 150 relative targets and found no missing target.
-- `AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/publish-cross.sh`: produced all five
+- `NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/publish-cross.sh`: produced all five
   portable archives (`win-x64`, `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`) plus
-  `SHA256SUMS.txt`; every checksum verified. Both macOS archives contain `agentnotify-menubar`, the
+  `SHA256SUMS.txt`; every checksum verified. Both macOS archives contain `nokoo-menubar`, the
   extracted binaries report the intended architecture, and strict code-signature verification
   passed.
 - `git diff --check`: passed before the final commit.
@@ -2333,16 +2465,16 @@ Three `dev` branches, each test-gated before a `--no-ff` merge:
 
 Gates actually run on this Mac (macOS 26.6.2, x86_64, native .NET SDK 10.0.401 at
 `~/.dotnet/dotnet`, Swift 6.3.3 CLT): the full test suite via
-`AGENTNOTIFY_DOTNET_EXE=… ./scripts/test.sh` — **1262 passed, 0 failed** — which also compiles the
+`NOKOO_DOTNET_EXE=… ./scripts/test.sh` — **1262 passed, 0 failed** — which also compiles the
 Core/Api/Cli/Host assemblies. This is the first time the router-switching and effort-mapping tests
 have executed anywhere. `scripts/build.sh` and `scripts/package.sh` remain Windows/WSL-only and were
 not run; the Windows tray installer was not rebuilt. `publish-cross.sh osx-x64` produced the archive,
 and the three binaries were installed into `~/.local/bin` (adhoc re-signed; the previous binaries
-were kept as `.agentnotify*-backup-effort-logos-*`). The menu-bar glyphs were additionally smoke-tested
+were kept as `.nokoo*-backup-effort-logos-*`). The menu-bar glyphs were additionally smoke-tested
 headlessly: both paths parse and render with pixel coverage matching their source viewBoxes.
 
-Verified live against the owner's configuration: `agentnotify health` reports ok after a
-`launchctl kickstart -k dev.agentnotify.broker`, the new `agentnotify-menubar` child is running, and
+Verified live against the owner's configuration: `nokoo health` reports ok after a
+`launchctl kickstart -k ai.nokoo.broker`, the new `nokoo-menubar` child is running, and
 `/ui/api/router/effort-mappings` returns 7 family groups (deepseek, glm, kimi, muse, openai, qwen,
 unknown) covering 28 routed models with the owner's 3 per-model overrides counted. The served
 `app.js` no longer registers `router-settings`, and the served `router-effort.js` is the
@@ -2362,8 +2494,8 @@ of the complete account menu. Live quota's account picker now directly controls 
 Verification actually run: `build-macos-menu-bar.sh` compiled and adhoc-signed the Swift executable;
 `node --check` passed for the updated Live quota module; the complete .NET suite passed **1262/1262**;
 and `publish-cross.sh osx-x64` produced the archive. All three binaries were installed into
-`~/.local/bin`, re-signed, and the LaunchAgent was restarted. `agentnotify health` returned `ok`, the
-new `agentnotify-menubar` child was running, and the live projection contained 4 selected accounts,
+`~/.local/bin`, re-signed, and the LaunchAgent was restarted. `nokoo health` returned `ok`, the
+new `nokoo-menubar` child was running, and the live projection contained 4 selected accounts,
 all 4 with five-hour values, so the native client creates 4 status items. The user had already
 visually confirmed the provider marks before this change, then confirmed the installed four-item
 rendering works as intended.
@@ -2379,7 +2511,7 @@ link.
 Local release gates on the Intel Mac: the full .NET suite passed **1262/1262**; the Next.js
 documentation type-check and 30-page static export passed; and `publish-cross.sh` built all five
 portable archives (`win-x64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`). Every checksum in
-`artifacts/cross/SHA256SUMS.txt` verified. Both macOS archives contain `agentnotify-menubar`, both CLI
+`artifacts/cross/SHA256SUMS.txt` verified. Both macOS archives contain `nokoo-menubar`, both CLI
 and broker binaries in the Intel archive report `0.2.0-alpha.3`, and the menu-bar binary passes strict
 codesign verification. The Windows WPF build, 1262-test run, and installer packaging were deferred
 to the tag-triggered Release workflow because they cannot run through the repository's Windows/WSL
@@ -2401,7 +2533,7 @@ Delivery, Configuration), Model router, Insights — with Overview and About sta
 `/overview` was then rewritten as one band per system over live projections.
 
 **What ran.** The full .NET suite passed **1270/1270** through
-`AGENTNOTIFY_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh`. The new
+`NOKOO_DOTNET_EXE="$HOME/.dotnet/dotnet" ./scripts/test.sh`. The new
 `scripts/check-webui.sh` parses every `wwwroot/*.js` as an ES module and passes.
 
 **What was actually looked at.** The rebuilt overview was rendered in headless Chrome against the
@@ -2412,7 +2544,7 @@ projects, health grid and dead-letter warning; the Model router band's success r
 targets; the Insights band's sparkline, agent mix and tightest balances. The proxy could not mutate
 anything, and the owner's installation, database, and keychain were untouched.
 
-**A bug the test suite could not see.** The first render showed only "Loading AgentNotify…". The
+**A bug the test suite could not see.** The first render showed only "Loading Nokoo…". The
 cause was a single missing `)`; `node --check` had reported the file clean, because without a
 `package.json` declaring `"type": "module"` it parses a `.js` file as a classic script, and script
 parsing accepts nesting that module parsing rejects. The .NET tests fetch the script's *text* and so
@@ -2421,7 +2553,7 @@ exact defect before being kept. Quota rows were also found ambiguous on screen �
 "Claude Code · 7-day" with different values — and now carry provider, window, and account.
 
 **Gates that did not run, and why.** `./scripts/build.sh` cannot complete on this macOS host:
-`AgentNotify.App` and `AgentNotify.Setup` are WPF and fail with NETSDK1100. `./scripts/package.sh`
+`Nokoo.App` and `Nokoo.Setup` are WPF and fail with NETSDK1100. `./scripts/package.sh`
 needs Windows PowerShell. Neither ran here, so the WPF desktop app is unbuilt and unexercised by
 this change; nothing in this change touches WPF code. No Windows runtime check and no manual check
 of the installed desktop UI were performed.
@@ -2446,7 +2578,7 @@ than 500px, so "phone width" here means 500px, not 390px. Not checked: the light
 through the tabs by hand — rows were opened by a preview-only script, not a click.
 
 **Site.** `npm run typecheck` and the static export (`npm run build`, 32 pages) pass. The export was
-served under `/agent-notify/` like GitHub Pages: `/docs/` now redirects to
+served under `/nokoo/` like GitHub Pages: `/docs/` now redirects to
 `/docs/install-with-agent/` (followed in headless Chrome), and the rebuilt landing page was
 screenshotted and read. Not deployed: the Pages workflow runs on push, and nothing was pushed. `npm
 audit` reports three advisories in `next`, its bundled `postcss`, and `sharp`; they predate this change
@@ -2462,7 +2594,7 @@ and the build now asserts that the staged `js/app.js` is byte-identical to the s
 the staged `api.js` contains no `fetch(`.
 
 All 17 routes were loaded in headless Chrome from the staged copy and again from the built `_site`
-output served under `/agent-notify/`: every one renders, none shows a `notice-danger`, and none is
+output served under `/nokoo/`: every one renders, none shows a `notice-danger`, and none is
 left on a skeleton. Overview, router Agents, and Live quota were screenshotted and read. **Not
 verified:** clicking through the demo by hand, the light theme, and the write paths — the mutations
 in `demo/api.js` (resolving a notification, saving a route, connecting an agent) were exercised only
@@ -2474,7 +2606,7 @@ is invented. No value was copied or redacted from this machine's broker, and the
 read to produce it.
 
 **Site.** `npm run typecheck` and the static export pass (35 pages, up from 32). New pages `/arc/`,
-`/channels/`, and `/relay/` and the rebuilt `/router/` were served under `/agent-notify/` and
+`/channels/`, and `/relay/` and the rebuilt `/router/` were served under `/nokoo/` and
 screenshotted; the live diagrams (`RouterFlow`, `ArcLifecycle`, `RelayPath`) were checked to be in
 step with their own pills. Step text is rendered directly rather than faded in: under headless
 capture the first implementation left cards blank because no animation frame had run, which would
@@ -2486,7 +2618,7 @@ of writing** — the Pages workflow runs on push.
 **What was diagnosed.** A Codex conversation failed with HTTP 400 from the upstream naming
 `input[8].id` and then `input[10].id`, the value being
 `rs_<24 hex>:rs_<32 hex>`. Evidence gathered: the router mints no `rs_` identifier anywhere
-(`grep` over `src/AgentNotify.Router`), joins nothing with a colon, and on a same-wire hop
+(`grep` over `src/Nokoo.Router`), joins nothing with a colon, and on a same-wire hop
 `PassthroughBody.ReplaceModel` rewrote only `model` — so the identifier came from an upstream and
 was forwarded verbatim. The ledger rows confirm the failing attempts went to the `chatgpt` upstream
 (`openai_responses`, `codex_chatgpt`, `chatgpt.com/backend-api/codex`), and that a 400 is recorded
@@ -2510,7 +2642,7 @@ different 400. Keeping the identifier, however, fails every time, so this cannot
 **Installed on this Mac (2026-09-20 12:19 local).** `osx-x64` published from `645bff8`, archive
 checksum verified, the three running binaries backed up to
 `~/.local/bin/.*-backup-responses-id-fix-20260920-1219`, replaced, and re-signed (`codesign -v`
-passes on all three). LaunchAgent reloaded: `agentnotify health` returns ok, pid 15810, API on
+passes on all three). LaunchAgent reloaded: `nokoo health` returns ok, pid 15810, API on
 127.0.0.1:47821, menu bar pid 15869. The `secret-protection` marker still reads `macos-keychain`
 and this start logged "protected with AES-GCM under the macOS login keychain", so the upgrade did
 not repeat the store misselection of the previous night.
@@ -2551,3 +2683,22 @@ hop, adjacent assistant messages are already coalesced by `MergeAdjacentAssistan
 items are dropped during decoding, so neither of the two obvious causes fits. The provider's error
 message is deliberately never stored, so the body that offended it was not recoverable. Failover now
 routes around it rather than explaining it.
+
+## Nokoo name, proprietary licence, and website move (2026-09-26)
+
+**What changed.** Every project, namespace, assembly, binary (`nokoo`, `nokood`, `nokoo-menubar`,
+`NokooSetup.exe`), environment variable (`NOKOO_*`), data folder (`%LOCALAPPDATA%\Nokoo`,
+`nokoo.db`), header (`X-Nokoo-*`), ARC extension (`x-nokoo`), skill (`distribution/nokoo`), and
+harness hook path now carries the Nokoo name. The licence is proprietary; the MIT texts in the
+installer, About pages, README, and getting-started guide are gone. The documentation site moved to
+the separate `nokoo-website` repository, so `site/`, `scripts/build-site.sh`, and the Pages workflow
+were removed. The DPAPI entropy string was deliberately left unchanged, because it is part of every
+stored ciphertext.
+
+**Verified on macOS** with the repository scripts (`NOKOO_DOTNET_EXE` pointed at the local .NET 10
+SDK): full suite **1318/1318**, `scripts/check-webui.sh` clean, and
+`scripts/build-macos-menu-bar.sh` built `nokoo-menubar`.
+
+**Not verified.** The WPF tray app, the installer, and `scripts/package.sh` were not built — they need
+Windows. No installed copy was upgraded: an existing install keeps its old data folder, CLI name,
+startup entry, and harness hooks until it is reinstalled and the hooks are installed again.

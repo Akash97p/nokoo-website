@@ -1,6 +1,6 @@
 # Roadmap
 
-AgentNotify keeps the local broker, notification lifecycle, and history as the source of truth as opt-in delivery capabilities expand.
+Nokoo keeps the local broker, notification lifecycle, and history as the source of truth as opt-in delivery capabilities expand.
 
 ## Near term
 
@@ -32,7 +32,7 @@ WhatsApp must use the official business platform rather than browser automation 
 
 ## Agent ecosystem
 
-- Agent Client Protocol client for AgentNotify-managed coding sessions.
+- Agent Client Protocol client for Nokoo-managed coding sessions.
 - More native answer adapters for existing coding-agent sessions; Codex/Claude ask hooks, Hermes,
   and OpenClaw answer paths already exist.
 - Optional MCP elicitation and A2A/AEP projections after the response contract is stable.

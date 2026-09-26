@@ -1,27 +1,27 @@
 # CLI reference
 
-The `agentnotify` command-line client talks to the local AgentNotify broker over HTTP. Broker `/v1`
+The `nokoo` command-line client talks to the local Nokoo broker over HTTP. Broker `/v1`
 commands require a running broker and valid bearer token; `health` can use an unauthenticated probe,
 and `ui` opens the local browser interface without sending a token. `token` reads local configuration.
 Relay commands talk to the configured Relay and local protected provider store.
 
 Binary name:
 
-- `agentnotify.exe` on Windows (`%LOCALAPPDATA%\Programs\AgentNotify\agentnotify.exe` after installation, added to the current user's `PATH`).
-- Reachable from WSL as `agentnotify.exe`. After installation open a new WSL shell so the updated Windows `PATH` is imported.
-- `agentnotify` on macOS and Linux, installed alongside the headless `agentnotifyd` broker.
+- `nokoo.exe` on Windows (`%LOCALAPPDATA%\Programs\Nokoo\nokoo.exe` after installation, added to the current user's `PATH`).
+- Reachable from WSL as `nokoo.exe`. After installation open a new WSL shell so the updated Windows `PATH` is imported.
+- `nokoo` on macOS and Linux, installed alongside the headless `nokood` broker.
 
-Source: `src/AgentNotify.Cli/Program.cs`.
+Source: `src/Nokoo.Cli/Program.cs`.
 
 ---
 
 ## Invocation
 
 ```text
-agentnotify <command> [options]
-agentnotify "Title" ["Message"] [options] shorthand for send
-agentnotify --help | -h | help [<command>]
-agentnotify --version
+nokoo <command> [options]
+nokoo "Title" ["Message"] [options] shorthand for send
+nokoo --help | -h | help [<command>]
+nokoo --version
 ```
 
 When no command is given the usage text is printed and the process exits `0`. Known commands include
@@ -39,13 +39,13 @@ All commands that contact the broker use a 10-second HTTP timeout. Connection fa
 
 | Flag | Short | Value | Required | Default |
 |------|-------|-------|----------|---------|
-| `--port` | — | integer | no | `47821` from the platform data directory's `config.json` `port`, or `AGENTNOTIFY_PORT` when `ConfigStore` is constructed with environment overrides |
-| `--token` | — | string | no | `authToken` from the same config file, or `AGENTNOTIFY_TOKEN` (see Authentication) |
+| `--port` | — | integer | no | `47821` from the platform data directory's `config.json` `port`, or `NOKOO_PORT` when `ConfigStore` is constructed with environment overrides |
+| `--token` | — | string | no | `authToken` from the same config file, or `NOKOO_TOKEN` (see Authentication) |
 
-Token resolution for broker calls (`src/AgentNotify.Cli/Program.cs`):
+Token resolution for broker calls (`src/Nokoo.Cli/Program.cs`):
 
 1. `--token` when supplied.
-2. `AGENTNOTIFY_TOKEN` environment variable when `ConfigStore(applyEnvOverrides: true)` is used.
+2. `NOKOO_TOKEN` environment variable when `ConfigStore(applyEnvOverrides: true)` is used.
 3. `authToken` from the platform data directory's `config.json`.
 
 If no token is available a warning is written to stderr but the request is still sent; the broker replies `401`.
@@ -60,7 +60,7 @@ Base URL is `http://127.0.0.1:{port}`.
 
 ### Type identifiers
 
-`--type` values are normalized by `AgentNotify.Protocol.NotificationTypes.Normalize` (`src/AgentNotify.Protocol/NotificationTypes.cs`):
+`--type` values are normalized by `Nokoo.Protocol.NotificationTypes.Normalize` (`src/Nokoo.Protocol/NotificationTypes.cs`):
 
 - Trim, replace `-` with `_`, lower-case.
 - Map `inputrequired` to `input_required` and `permissionrequired` to `permission_required`.
@@ -70,17 +70,17 @@ Built-in IDs: `info`, `success`, `warning`, `error`, `input_required`, `permissi
 
 ### Priority and status enums
 
-Enum flags use `Program.TryParseEnum` (`src/AgentNotify.Cli/Program.cs`):
+Enum flags use `Program.TryParseEnum` (`src/Nokoo.Cli/Program.cs`):
 
 ```text
 value.Replace('-', '_').Replace("_","") then Enum.TryParse(ignoreCase:true)
 ```
 
-That makes `high`, `HIGH`, `high-priority` styles accepted as long as letters match. `status` filtering on `list` uses the same normalization in `src/AgentNotify.Api/ApiHost.cs`.
+That makes `high`, `HIGH`, `high-priority` styles accepted as long as letters match. `status` filtering on `list` uses the same normalization in `src/Nokoo.Api/ApiHost.cs`.
 
 Valid priorities for `--priority`: `low`, `normal`, `high`, `critical`. On failure: `--priority must be low, normal, high, or critical.`
 
-Valid statuses: `active`, `dismissed`, `resolved` (see `src/AgentNotify.Protocol/NotificationStatus.cs`).
+Valid statuses: `active`, `dismissed`, `resolved` (see `src/Nokoo.Protocol/NotificationStatus.cs`).
 
 ---
 
@@ -91,9 +91,9 @@ Valid statuses: `active`, `dismissed`, `resolved` (see `src/AgentNotify.Protocol
 Creates a notification or, when `key` matches an active notification, updates it in place.
 
 ```text
-agentnotify send --title T --message M [options]
-agentnotify "Title" ["Message"] [options]
-agentnotify --title T --msg M [options]
+nokoo send --title T --message M [options]
+nokoo "Title" ["Message"] [options]
+nokoo --title T --msg M [options]
 ```
 
 | Flag | Value | Required | Default | Notes |
@@ -102,7 +102,7 @@ agentnotify --title T --msg M [options]
 | `--message` / `--msg` | text | yes (or second positional) | — | Trimmed, 1–4000 characters |
 | `--type` | identifier | no | `info` | Normalized as above |
 | `--priority` | enum | no | type default or `normal` | `low`/`normal`/`high`/`critical` |
-| `--agent` | string | no | `AGENTNOTIFY_AGENT` or `cli` | Trimmed, max 100 |
+| `--agent` | string | no | `NOKOO_AGENT` or `cli` | Trimmed, max 100 |
 | `--agent-instance` | string | no | — | Trimmed, max 100 |
 | `--project` | string | no | — | Trimmed, max 200 |
 | `--key` | string | no | — | Trimmed, max 100; triggers deduplication |
@@ -111,7 +111,7 @@ agentnotify --title T --msg M [options]
 | `--port` | integer | no | `47821` | As above |
 | `--token` | string | no | file/env | As above |
 
-Positional shorthand (`src/AgentNotify.Cli/Program.cs`):
+Positional shorthand (`src/Nokoo.Cli/Program.cs`):
 
 - First positional sets `--title` when `--title` was not supplied.
 - Second positional sets `--message` when `--message` was not supplied.
@@ -119,8 +119,8 @@ Positional shorthand (`src/AgentNotify.Cli/Program.cs`):
 
 Other behavior:
 
-- `agent` defaults to `AGENTNOTIFY_AGENT` or `cli`. `cwd` defaults to the current directory (failure to read returns no value).
-- Unknown `send` flags produce `unknown option '<flag>' for send. Run 'agentnotify help send'.`
+- `agent` defaults to `NOKOO_AGENT` or `cli`. `cwd` defaults to the current directory (failure to read returns no value).
+- Unknown `send` flags produce `unknown option '<flag>' for send. Run 'nokoo help send'.`
 
 Output: on success the broker returns `201` with a `NotificationDto`; the CLI pretty-prints the JSON with indentation to stdout. On failure it prints `Error {code} {Status}: {error}` to stderr where `{error}` is the broker's `{ "error": "..." }` field or the raw body.
 
@@ -128,19 +128,19 @@ Examples:
 
 ```bash
 # Explicit flags
-agentnotify.exe send --title "Build done" --message "All tests passed" --type success
+nokoo.exe send --title "Build done" --message "All tests passed" --type success
 
 # Positional shorthand
-agentnotify.exe "Need input" "Which branch should I use?" --type input_required --key my-task
+nokoo.exe "Need input" "Which branch should I use?" --type input_required --key my-task
 
 # With metadata derived from environment
-AGENTNOTIFY_AGENT=opencode agentnotify.exe send --title "Task blocked" --message "Missing SDK" --type blocked --priority high --project myrepo --key build-42
+NOKOO_AGENT=opencode nokoo.exe send --title "Task blocked" --message "Missing SDK" --type blocked --priority high --project myrepo --key build-42
 ```
 
 ### `list` — list notifications
 
 ```text
-agentnotify list [options]
+nokoo list [options]
 ```
 
 | Flag | Value | Required | Default | Notes |
@@ -166,18 +166,18 @@ Output:
 Examples:
 
 ```bash
-agentnotify.exe list --unresolved --limit 20
-agentnotify.exe list --type error --status active --json
-agentnotify.exe list --project myrepo --agent opencode --limit 50
+nokoo.exe list --unresolved --limit 20
+nokoo.exe list --type error --status active --json
+nokoo.exe list --project myrepo --agent opencode --limit 50
 ```
 
 ### `get` — fetch one notification by id
 
 ```text
-agentnotify get <id> [--port N] [--token T]
+nokoo get <id> [--port N] [--token T]
 ```
 
-- `<id>` is required and must not start with `-`. Otherwise: `get requires an <id>. Usage: agentnotify get <id>`.
+- `<id>` is required and must not start with `-`. Otherwise: `get requires an <id>. Usage: nokoo get <id>`.
 - Only `--port` and `--token` are accepted after the id.
 
 Output: pretty-printed `NotificationDto` on success. On failure `Error {code} {Status}: {error}` to stderr.
@@ -185,50 +185,50 @@ Output: pretty-printed `NotificationDto` on success. On failure `Error {code} {S
 Example:
 
 ```bash
-agentnotify.exe get 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
+nokoo.exe get 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
 ```
 
 ### `resolve` — mark a notification resolved
 
 ```text
-agentnotify resolve <id> [--port N] [--token T]
+nokoo resolve <id> [--port N] [--token T]
 ```
 
 - `<id>` required; same validation as `get`.
-- Implemented as `PATCH /v1/notifications/{id}` with `{ "status": "resolved" }` (`src/AgentNotify.Cli/Program.cs`).
+- Implemented as `PATCH /v1/notifications/{id}` with `{ "status": "resolved" }` (`src/Nokoo.Cli/Program.cs`).
 
 Output: pretty-printed updated `NotificationDto` on success.
 
 Example:
 
 ```bash
-agentnotify.exe resolve 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
+nokoo.exe resolve 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
 ```
 
 ### `dismiss` — dismiss a notification
 
 ```text
-agentnotify dismiss <id> [--port N] [--token T]
+nokoo dismiss <id> [--port N] [--token T]
 ```
 
 - `<id>` required.
-- Tries `POST /v1/notifications/{id}/dismiss`; on `404` falls back to `PATCH` with `dismissed` (`src/AgentNotify.Cli/Program.cs`).
+- Tries `POST /v1/notifications/{id}/dismiss`; on `404` falls back to `PATCH` with `dismissed` (`src/Nokoo.Cli/Program.cs`).
 
 Output: pretty-printed updated `NotificationDto` on success.
 
 Example:
 
 ```bash
-agentnotify.exe dismiss 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
+nokoo.exe dismiss 9e8a3f2b7c6d4e5f8a1b2c3d4e5f6a7b8
 ```
 
 ### `health` — check broker health
 
 ```text
-agentnotify health [--port N] [--token T]
+nokoo health [--port N] [--token T]
 ```
 
-Authentication detection (`src/AgentNotify.Cli/Program.cs`):
+Authentication detection (`src/Nokoo.Cli/Program.cs`):
 
 - `wantAuth` is true when `--token` is supplied or a token file exists (`ConfigStore(applyEnvOverrides: false).Load().AuthToken` is non-empty).
 - When `wantAuth` is true the CLI calls `GET /v1/health` (authenticated). On `401` it falls back to `GET /health` and prints the unauthenticated body.
@@ -237,42 +237,42 @@ Authentication detection (`src/AgentNotify.Cli/Program.cs`):
 Output:
 
 - Success: pretty-printed JSON. Authenticated shape is `HealthResponse` (`status`, `version`, `pid`, `uptimeSeconds`, `activeCount`, `apiVersion`, `serverTimeUtc`). Unauthenticated shape is `{ "status": "ok" }`.
-- On `HttpRequestException`: `Could not reach AgentNotify at http://127.0.0.1:{port}: {message}` plus `Is the app running? Check the tray icon.` to stderr.
+- On `HttpRequestException`: `Could not reach Nokoo at http://127.0.0.1:{port}: {message}` plus `Is the app running? Check the tray icon.` to stderr.
 
 Example:
 
 ```bash
-agentnotify.exe health
-agentnotify.exe health --port 47821 --token "$TOKEN"
+nokoo.exe health
+nokoo.exe health --port 47821 --token "$TOKEN"
 ```
 
 ### `token` — print the local bearer token
 
 ```text
-agentnotify token
+nokoo token
 ```
 
 Reads `ConfigStore().Load()` (the platform data directory's `config.json`). On success prints the token to stdout with no additional formatting. Failures:
 
-- `No token found. Has AgentNotify run at least once? Look at: {ConfigPath}` to stderr.
+- `No token found. Has Nokoo run at least once? Look at: {ConfigPath}` to stderr.
 - Any exception message to stderr.
 
 Example:
 
 ```bash
-TOKEN="$(agentnotify.exe token)"
+TOKEN="$(nokoo.exe token)"
 curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:47821/v1/health
 ```
 
 ### `relay` — pair and verify Relay providers
 
 ```text
-agentnotify relay pair --url URL [--name NAME] [--sender-name NAME] [--allow-private] [--json]
-agentnotify relay status [--json]
+nokoo relay pair --url URL [--name NAME] [--sender-name NAME] [--allow-private] [--json]
+nokoo relay status [--json]
 ```
 
 `relay pair` uses the same device-authorization client as the Windows Settings panel. It validates
-the base URL, checks `/.well-known/agentnotify-relay` for API `v1`, creates a sender pairing request,
+the base URL, checks `/.well-known/nokoo-relay` for API `v1`, creates a sender pairing request,
 prints the verification URL and short code, polls until approval, verifies the returned installation,
 and writes the provider configuration and credential together through `ProviderProfileService`.
 The credential is never printed. A matching Relay URL updates its existing profile; a new profile is
@@ -298,24 +298,24 @@ disabled. With `--json`, it emits one object per profile.
 Examples:
 
 ```bash
-agentnotify relay pair --url https://relay.example.com --name "Home relay"
-agentnotify relay pair --url http://localhost:4000 --allow-private --json
-agentnotify relay status
+nokoo relay pair --url https://relay.example.com --name "Home relay"
+nokoo relay pair --url http://localhost:4000 --allow-private --json
+nokoo relay status
 ```
 
 ### `router` — the local provider router
 
 ```text
-agentnotify router status
-agentnotify router key
-agentnotify router agents
-agentnotify router connect <codex|claude_code> [--model <selector>]
-agentnotify router disconnect <codex|claude_code>
+nokoo router status
+nokoo router key
+nokoo router agents
+nokoo router connect <codex|claude_code> [--model <selector>]
+nokoo router disconnect <codex|claude_code>
 ```
 
 `status` and `key` read the local configuration file directly, like `token`, and make no network
 call. `agents`, `connect`, and `disconnect` ask the running broker, because it owns the router key and
-the generated model catalogue; they fail with a clear message when AgentNotify is not running.
+the generated model catalogue; they fail with a clear message when Nokoo is not running.
 
 `router connect` writes the agent's own configuration so its model picker lists every routed model,
 after copying the file. `--model` picks the selector it starts on (a route name, `combo/<name>`, or
@@ -333,14 +333,14 @@ appends `/v1/messages` itself.
 
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:47821/router
-export ANTHROPIC_CUSTOM_HEADERS="x-agentnotify-router-key: $(agentnotify router key)"
+export ANTHROPIC_CUSTOM_HEADERS="x-nokoo-router-key: $(nokoo router key)"
 ```
 
 ### `install-skill` — install the bundled agent skill
 
 ```text
-agentnotify install-skill <codex|claude|opencode> [options]
-agentnotify install skill <codex|claude|opencode> [options]
+nokoo install-skill <codex|claude|opencode> [options]
+nokoo install skill <codex|claude|opencode> [options]
 ```
 
 The skill payload is embedded in the CLI, so installation is offline and needs no npm, Python, or
@@ -349,43 +349,43 @@ separate download.
 | Flag | Value | Default | Notes |
 | --- | --- | --- | --- |
 | `--scope` | `user` or `project` | `user` | Select personal or current-repository discovery |
-| `--path` | directory | agent-specific skills root | Overrides `--scope`; the `agentnotify` folder is created beneath it |
+| `--path` | directory | agent-specific skills root | Overrides `--scope`; the `nokoo` folder is created beneath it |
 | `--wsl` | distribution | the calling distribution, via the WSL wrapper | Windows only. Installs into the default user's home in that running WSL distribution; cannot be combined with `--path` or `--scope project` |
-| `--force` | — | false | Replaces changed AgentNotify-owned files after explicit review |
+| `--force` | — | false | Replaces changed Nokoo-owned files after explicit review |
 | `--dry-run` | — | false | Reports the destination without writing |
 
 Default personal destinations:
 
 ```text
-Codex:       ~/.agents/skills/agentnotify
-Claude Code: ~/.claude/skills/agentnotify
-OpenCode:    ~/.config/opencode/skill/agentnotify
+Codex:       ~/.agents/skills/nokoo
+Claude Code: ~/.claude/skills/nokoo
+OpenCode:    ~/.config/opencode/skill/nokoo
 ```
 
 Codex installs `SKILL.md` and `agents/openai.yaml`; Claude Code and OpenCode install `SKILL.md`.
 Any other agent is installed by passing its skills root to `--path`. Identical files
 are treated as already up to date. A changed existing file is never overwritten unless `--force` is
-passed. Files outside the `agentnotify` skill directory are never modified.
+passed. Files outside the `nokoo` skill directory are never modified.
 
 Examples:
 
 ```bash
-agentnotify install-skill codex
-agentnotify install-skill claude --scope project
-agentnotify install-skill codex --dry-run
-agentnotify install-skill codex --path /custom/skills/root
-agentnotify.exe install-skill claude --wsl Ubuntu-20.04
+nokoo install-skill codex
+nokoo install-skill claude --scope project
+nokoo install-skill codex --dry-run
+nokoo install-skill codex --path /custom/skills/root
+nokoo.exe install-skill claude --wsl Ubuntu-20.04
 ```
 
-A Windows CLI started through `scripts/agentnotify` inside WSL receives `WSL_DISTRO_NAME` and uses
+A Windows CLI started through `scripts/nokoo` inside WSL receives `WSL_DISTRO_NAME` and uses
 that distribution's home unless `--path` or `--scope project` is given. `install-harness` has no WSL
 target and warns when started from WSL.
 
 ### `install-harness` — install the auto-notify harness
 
 ```text
-agentnotify install-harness <agent> [options]
-agentnotify install harness <agent> [options]
+nokoo install-harness <agent> [options]
+nokoo install harness <agent> [options]
 ```
 
 Agents: opencode, codex, claude, gemini, copilot, cursor, muse, kilo,
@@ -393,7 +393,7 @@ openclaw, hermes, pi.
 
 The harness payload is embedded in the CLI, so installation is offline.
 Unlike the skill, which relies on the model remembering to call
-AgentNotify, the harness hooks the host itself: permission prompts,
+Nokoo, the harness hooks the host itself: permission prompts,
 questions, session completion, and session errors send automatically.
 Hooks are notify-only — they always exit `0` and never approve, deny, or
 block. See [HARNESS.md](HARNESS.md).
@@ -409,34 +409,34 @@ block. See [HARNESS.md](HARNESS.md).
 Default personal destinations:
 
 ```text
-OpenCode:    ~/.config/opencode/plugins/agentnotify.js
-Codex:       ~/.codex/agentnotify/agentnotify_hook.py + ~/.codex/hooks.json
-Claude Code: ~/.claude/agentnotify/agentnotify_hook.py + ~/.claude/settings.json
-Gemini CLI:  ~/.gemini/agentnotify/agentnotify_hook.py + ~/.gemini/settings.json
-Copilot CLI: ~/.copilot/agentnotify/agentnotify_hook.py + ~/.copilot/hooks/agentnotify.json
-Cursor:      ~/.cursor/agentnotify/agentnotify_hook.py + ~/.cursor/hooks.json
-Muse Code:   ~/.config/muse/agentnotify/agentnotify_hook.py + ~/.config/muse/settings.json
-Kilo Code:   ~/.config/kilo/plugin/agentnotify.js
-OpenClaw:    ~/.openclaw/agentnotify/agentnotify_openclaw.py (watch daemon)
-Hermes:      ~/.hermes/plugins/agentnotify/ + config.yaml consent steps
-Pi:          ~/.pi/agent/extensions/agentnotify.ts
+OpenCode:    ~/.config/opencode/plugins/nokoo.js
+Codex:       ~/.codex/nokoo/nokoo_hook.py + ~/.codex/hooks.json
+Claude Code: ~/.claude/nokoo/nokoo_hook.py + ~/.claude/settings.json
+Gemini CLI:  ~/.gemini/nokoo/nokoo_hook.py + ~/.gemini/settings.json
+Copilot CLI: ~/.copilot/nokoo/nokoo_hook.py + ~/.copilot/hooks/nokoo.json
+Cursor:      ~/.cursor/nokoo/nokoo_hook.py + ~/.cursor/hooks.json
+Muse Code:   ~/.config/muse/nokoo/nokoo_hook.py + ~/.config/muse/settings.json
+Kilo Code:   ~/.config/kilo/plugin/nokoo.js
+OpenClaw:    ~/.openclaw/nokoo/nokoo_openclaw.py (watch daemon)
+Hermes:      ~/.hermes/plugins/nokoo/ + config.yaml consent steps
+Pi:          ~/.pi/agent/extensions/nokoo.ts
 ```
 
 Existing hook entries are preserved and reinstalling never duplicates the
-AgentNotify entries. Restart the host session after installing.
+Nokoo entries. Restart the host session after installing.
 
 Examples:
 
 ```bash
-agentnotify install-harness opencode
-agentnotify install-harness codex --scope project
-agentnotify install-harness claude --dry-run
+nokoo install-harness opencode
+nokoo install-harness codex --scope project
+nokoo install-harness claude --dry-run
 ```
 
 ### `ui` — open the web interface
 
 ```bash
-agentnotify ui [--print] [--port N]
+nokoo ui [--print] [--port N]
 ```
 
 Opens `http://127.0.0.1:<port>/ui/` in the default browser. No sign-in or token is involved.
@@ -447,14 +447,14 @@ unreachable or predates the web interface. See
 ### `interactions` — ask a waiting question and collect the answer
 
 ```text
-agentnotify interactions request --prompt TEXT [options]
-agentnotify interactions list [--pending] [--status STATUS] [--agent A] [--project P] [--session S] [--limit N] [--json]
-agentnotify interactions get <id>
-agentnotify interactions wait <id> [--timeout SECONDS]
-agentnotify interactions respond <id> --response-id R --digest D --nonce N [--choice C | --text T] [--source S] [--device D]
-agentnotify interactions cancel <id>
-agentnotify interactions publish <id>
-agentnotify interactions poll-responses [--provider ID] [--json]
+nokoo interactions request --prompt TEXT [options]
+nokoo interactions list [--pending] [--status STATUS] [--agent A] [--project P] [--session S] [--limit N] [--json]
+nokoo interactions get <id>
+nokoo interactions wait <id> [--timeout SECONDS]
+nokoo interactions respond <id> --response-id R --digest D --nonce N [--choice C | --text T] [--source S] [--device D]
+nokoo interactions cancel <id>
+nokoo interactions publish <id>
+nokoo interactions poll-responses [--provider ID] [--json]
 ```
 
 Opens a durable interaction (permission, single choice, or bounded text) and
@@ -470,13 +470,13 @@ outcome, a new one after an answer is a `409`. See
 Examples:
 
 ```bash
-agentnotify interactions request --kind permission --prompt "Deploy to prod?" \
+nokoo interactions request --kind permission --prompt "Deploy to prod?" \
   --choice allow-once:"Allow once" --choice deny:"Deny" --agent codex --project shop
-agentnotify interactions list --pending
-agentnotify interactions wait abc123 --timeout 120
-agentnotify interactions respond abc123 --response-id r1 --digest <digest> --nonce <nonce> --choice deny
-agentnotify interactions publish abc123
-agentnotify interactions poll-responses
+nokoo interactions list --pending
+nokoo interactions wait abc123 --timeout 120
+nokoo interactions respond abc123 --response-id r1 --digest <digest> --nonce <nonce> --choice deny
+nokoo interactions publish abc123
+nokoo interactions poll-responses
 ```
 
 `publish` re-sends one question to Relay-enabled routes (requests
@@ -488,15 +488,15 @@ continuously, so this command is for diagnostics or a manual catch-up. See
 ### `help` and `--version`
 
 ```text
-agentnotify help [send|list|get|resolve|dismiss|relay|install-skill|install-harness|interactions]
-agentnotify --help
-agentnotify -h
-agentnotify --version
+nokoo help [send|list|get|resolve|dismiss|relay|install-skill|install-harness|interactions]
+nokoo --help
+nokoo -h
+nokoo --version
 ```
 
 - `help <topic>` prints the topic help (`send`, `list`, `get`, `resolve`, `dismiss`, `relay`, `install-skill`, `install-harness`, `interactions`). Unknown topic prints the general usage.
 - `help` with no topic prints general usage (`PrintUsage`).
-- `--version` (`RunVersion`) prints `agentnotify {InformationalVersion}` derived from the CLI assembly.
+- `--version` (`RunVersion`) prints `nokoo {InformationalVersion}` derived from the CLI assembly.
 
 ---
 
@@ -511,9 +511,9 @@ agentnotify --version
 
 Additional failure messages written to stderr:
 
-- `Could not reach AgentNotify: {message}` / `Is the tray app running?` on `HttpRequestException` (top-level catch, `src/AgentNotify.Cli/Program.cs`).
-- `AgentNotify did not respond before the request timed out.` on `TaskCanceledException`.
-- `Could not reach AgentNotify at {baseUrl}: {message}` / `Is the app running? Check the tray icon.` for `health`.
+- `Could not reach Nokoo: {message}` / `Is the tray app running?` on `HttpRequestException` (top-level catch, `src/Nokoo.Cli/Program.cs`).
+- `Nokoo did not respond before the request timed out.` on `TaskCanceledException`.
+- `Could not reach Nokoo at {baseUrl}: {message}` / `Is the app running? Check the tray icon.` for `health`.
 
 ---
 
@@ -521,9 +521,9 @@ Additional failure messages written to stderr:
 
 | Variable | Used by | Effect |
 |----------|---------|--------|
-| `AGENTNOTIFY_AGENT` | `send` | Default for `--agent` when the flag is absent |
-| `AGENTNOTIFY_PORT` | all broker commands | Overrides `port` from `config.json` (`ConfigStore.cs`) |
-| `AGENTNOTIFY_TOKEN` | all broker commands | Overrides `authToken` from `config.json` (`ConfigStore.cs`) |
+| `NOKOO_AGENT` | `send` | Default for `--agent` when the flag is absent |
+| `NOKOO_PORT` | all broker commands | Overrides `port` from `config.json` (`ConfigStore.cs`) |
+| `NOKOO_TOKEN` | all broker commands | Overrides `authToken` from `config.json` (`ConfigStore.cs`) |
 
 ---
 

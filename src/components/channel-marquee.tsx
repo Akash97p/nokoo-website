@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 
 const channels = [
-  "AgentNotify Relay", "Webhook", "SMTP", "Telegram", "Discord", "Slack", "Teams", "Zoho Cliq", "Google Chat",
+  "Nokoo Relay", "Webhook", "SMTP", "Telegram", "Discord", "Slack", "Teams", "Zoho Cliq", "Google Chat",
   "Mattermost", "Matrix", "ntfy", "Gotify", "Pushover", "Pushbullet", "Twilio SMS", "WhatsApp Cloud",
   "Twilio WhatsApp", "MQTT",
 ];

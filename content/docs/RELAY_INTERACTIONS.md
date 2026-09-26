@@ -199,7 +199,7 @@ different answer with `409` (first valid response wins).
 
 The desktop polls on a low-frequency continuous loop while the broker runs,
 with bounded backoff on failure, and keeps its cursor in durable local state
-so a restart resumes rather than re-reading. `agentnotify interactions
+so a restart resumes rather than re-reading. `nokoo interactions
 poll-responses` remains for diagnostics. No webhook/push from Relay to
 desktop exists in v1 — the desktop always pulls.
 

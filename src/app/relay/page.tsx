@@ -10,13 +10,13 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Separator } from "@/components/ui/separator";
 
 export const metadata: Metadata = {
-  title: "AgentNotify Relay",
+  title: "Nokoo Relay",
   description:
     "The hosted hop from your computers to your phone: device-sealed payloads, browser approval instead of pasted tokens, and answers that travel back to the waiting agent.",
 };
 
 const steps = [
-  { icon: ScanLine, title: "Approve a computer in the browser", body: "Pairing follows the OAuth device authorization grant — the handshake you already use to sign a CLI or a TV into an account. AgentNotify shows a short code; you approve it in the relay console. Nothing is typed between the two." },
+  { icon: ScanLine, title: "Approve a computer in the browser", body: "Pairing follows the OAuth device authorization grant — the handshake you already use to sign a CLI or a TV into an account. Nokoo shows a short code; you approve it in the relay console. Nothing is typed between the two." },
   { icon: QrCode, title: "Scan once per phone", body: "The QR code is a short-lived, single-use challenge, not a credential. The phone's device credential is minted only when it presents that challenge." },
   { icon: Smartphone, title: "Every paired computer can reach it", body: "A phone belongs to your relay account rather than to one machine, so a second laptop needs no second scan." },
   { icon: MessageSquareReply, title: "Answer from the phone", body: "A permission, a choice, or a short text goes back through the relay; the running broker picks it up and returns it to the waiting host adapter." },
@@ -40,9 +40,9 @@ export default function RelayPage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Button asChild size="lg"><Link href="/docs/relay/">Read the Relay guide <ArrowRight /></Link></Button>
-                <Button asChild size="lg" variant="outline"><Link href="/channels/">See every channel</Link></Button>
+                <Button asChild size="lg" variant="outline"><Link href="/pricing/">See pricing</Link></Button>
               </div>
-              <p className="mt-5 text-sm text-muted-foreground">There is no server to install and no address to enter. Relay is one more opt-in channel, and AgentNotify works fully without it.</p>
+              <p className="mt-5 text-sm text-muted-foreground">There is no server to install and no address to enter. Relay is one more opt-in channel, and Nokoo works fully without it.</p>
             </Reveal>
             <Reveal delay={0.15}>
               <RelayPath />
@@ -115,7 +115,7 @@ export default function RelayPage() {
               <div className="mb-3 flex size-9 items-center justify-center rounded-md border bg-background"><ServerOff className="size-4" /></div>
               <CardTitle>A transport, not a system of record</CardTitle>
               <CardDescription className="leading-6">
-                Local AgentNotify history stays authoritative. A relay that is unreachable never blocks or loses a local
+                Local Nokoo history stays authoritative. A relay that is unreachable never blocks or loses a local
                 notification — it just means the copy on your phone arrives later, or not at all.
               </CardDescription>
             </CardHeader>

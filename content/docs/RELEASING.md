@@ -1,27 +1,23 @@
-# Releases and GitHub Pages
+# Releases
 
-The repository is published at [github.com/Akash97p/agent-notify](https://github.com/Akash97p/agent-notify). These files document the release process; GitHub Actions performs the hosted build and publication after an authorized tag push.
+The repository is private, hosted at `github.com/Akash97p/agent-notify`. These files document the release process; GitHub Actions performs the hosted build and publication after an authorized tag push.
 
 ## GitHub repository setup
 
 1. Keep `main` as the stable release line and `dev` as the integration line.
 2. Make `main` the default protected branch and require the CI workflow before merge.
-3. In **Settings → Pages**, select **GitHub Actions** as the publishing source.
-4. Keep normal development on topic branches merged into `dev`; promote a tested release from `dev` to `main` through review.
-5. Obtain and configure Authenticode signing before presenting a public build as trusted. The current workflow produces unsigned binaries.
+3. Keep normal development on topic branches merged into `dev`; promote a tested release from `dev` to `main` through review.
+4. Obtain and configure Authenticode signing before presenting a public build as trusted. The current workflow produces unsigned binaries.
 
-The Pages workflow builds the Next.js application in `site/` as a static export after changes reach
-`dev` or `main`. The site uses TypeScript, Tailwind CSS, and checked-in shadcn/ui source components;
-`scripts/build-site.sh` copies the ARC 0.1 and 0.2 schemas and branding assets, runs `npm ci`, type-checks, builds,
-and stages the export in `_site`. GitHub Actions then uploads that directory using the official Pages
-actions and requests only read, Pages, and OIDC permissions.
+The website, including the documentation and the hosted web UI demo, lives in the separate
+`nokoo-website` repository and is deployed from there. Its `scripts/sync-content.sh` copies the
+guides, ARC schemas, logo, and web UI from this repository.
 
 The latest tagged prerelease is
 [`v0.2.0-alpha.3`](https://github.com/Akash97p/agent-notify/releases/tag/v0.2.0-alpha.3),
 tagged 2026-09-19; the tag's release workflow publishes the Windows installer, portable archives,
 checksums, and skill.
-GitHub Pages follows the `dev`/`main` documentation source, so it can describe newer development
-features before another binary release is tagged. A user needs a new broker build to try those
+The website can describe newer development features before another binary release is tagged. A user needs a new broker build to try those
 features.
 
 ## First hosted prerelease: `v0.0.1-alpha.1`
@@ -32,7 +28,7 @@ The first hosted prerelease was prepared on the `dev` integration line and publi
 - Merge commit: `8186aed` (`merge: prepare v0.0.1-alpha.1 prerelease`)
 - Actions run: [31566620009](https://github.com/Akash97p/agent-notify/actions/runs/31566620009)
 - Result: successful Windows build, test, packaging, and prerelease publication
-- Assets: `AgentNotifySetup.exe`, `SHA256SUMS.txt`, and `SKILL.md`
+- Assets: `NokooSetup.exe`, `SHA256SUMS.txt`, and `SKILL.md`
 - Local installer checksum recorded in [`docs/VERIFICATION.md`](VERIFICATION.md): `2000b536dc8eac4b72821d0ac6df7b79cb258f4ce7b2f0bfb7456a4df3d7e78b`
 
 This is an alpha evaluation release, not the mature `v1.0.0` release. It may contain incomplete features, breaking changes, unsigned binaries, and unverified provider integrations.
@@ -82,7 +78,7 @@ locally:
 5. After the release commit is on the intended release branch, create and push an exact matching tag. Prerelease tags use SemVer-style suffixes and are marked as prereleases automatically:
 
    ```bash
-   git tag -a v0.0.1-alpha.1 -m "AgentNotify v0.0.1-alpha.1"
+   git tag -a v0.0.1-alpha.1 -m "Nokoo v0.0.1-alpha.1"
    git push origin v0.0.1-alpha.1
    ```
 
@@ -90,11 +86,11 @@ locally:
 
 The tag workflow independently restores, builds, tests, packages, checks the tag against `Directory.Build.props`, and creates a GitHub Release containing:
 
-- `AgentNotifySetup.exe`, the Windows installer;
+- `NokooSetup.exe`, the Windows installer;
 - `SHA256SUMS.txt`, covering the installer;
 - the distributable `SKILL.md`;
-- `agentnotify-win-x64.zip` and `agentnotify-{linux,osx}-{x64,arm64}.tar.gz`, the portable CLI and
-  `agentnotifyd` broker archives; macOS archives also contain `agentnotify-menubar`; and
+- `nokoo-win-x64.zip` and `nokoo-{linux,osx}-{x64,arm64}.tar.gz`, the portable CLI and
+  `nokood` broker archives; macOS archives also contain `nokoo-menubar`; and
 - `SHA256SUMS-portable.txt`, covering those archives.
 
 The portable archives are produced by a second job on a macOS runner after the Windows job succeeds.

@@ -114,7 +114,7 @@ export default {
         description: "Played for every type without its own sound.",
         body: [
           h("div", { class: "field" }, h("label", { class: "field-label", for: "global-sound", text: "Sound" }), h("div", { class: "input-row" }, globalSelect, globalPreview)),
-          h("div", { class: "row" }, uploadButton, upload, h("span", { class: "small muted", text: "Imported files are copied into AgentNotify's data folder." })),
+          h("div", { class: "row" }, uploadButton, upload, h("span", { class: "small muted", text: "Imported files are copied into Nokoo's data folder." })),
         ],
       }),
       card({ title: "By type", description: "Give the types you care about a sound of their own.", body: overridesBody }),

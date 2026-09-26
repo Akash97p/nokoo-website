@@ -2,8 +2,8 @@
 
 ## Design goals
 
-AgentNotify runs one broker per user. On Windows the WPF tray process owns the broker, native
-notification center, Settings window, and custom toasts. On macOS and Linux `agentnotifyd` owns the
+Nokoo runs one broker per user. On Windows the WPF tray process owns the broker, native
+notification center, Settings window, and custom toasts. On macOS and Linux `nokood` owns the
 same loopback API, lifecycle, SQLite repository, outbound delivery, and local WebUI. macOS also runs
 a thin broker-owned AppKit status item for quota; Linux has no native tray yet. Portable domain
 boundaries keep the hosts aligned.
@@ -12,14 +12,14 @@ boundaries keep the hosts aligned.
 
 ### Protocol
 
-`AgentNotify.Protocol` is the portable wire-contract assembly. It defines the local API DTOs, stable
+`Nokoo.Protocol` is the portable wire-contract assembly. It defines the local API DTOs, stable
 notification type identifiers, priority/status enums, shared `System.Text.Json` rules, and the ARC
 0.1 event model and JSON Schema. The original eight snake-case
 type IDs remain compatible while custom IDs are validated and persisted without an enum migration.
 
 ### Core
 
-`AgentNotify.Core` contains no WPF or ASP.NET dependency. It owns:
+`Nokoo.Core` contains no WPF or ASP.NET dependency. It owns:
 
 - validation and lifecycle transition rules;
 - creation and deduplication behavior;
@@ -28,28 +28,28 @@ type IDs remain compatible while custom IDs are validated and persisted without 
 - SQLite persistence; and
 - local file logging.
 
-Keyed creation is guarded by a process-wide asynchronous gate in `NotificationService`. AgentNotify is single-instance, so this prevents concurrent callers from creating two active rows with the same logical key.
+Keyed creation is guarded by a process-wide asynchronous gate in `NotificationService`. Nokoo is single-instance, so this prevents concurrent callers from creating two active rows with the same logical key.
 
 ### Insights and router assemblies
 
 Two read-side/proxy concerns live outside the notification core so the attention path stays small
 and testable on its own:
 
-- `AgentNotify.Insights` owns usage indexing (`Usage`), live account quota (`Quota`), and stored-key
+- `Nokoo.Insights` owns usage indexing (`Usage`), live account quota (`Quota`), and stored-key
   billing (`Billing`). It reads agent logs and provider APIs; it never creates, updates, or delivers
   a notification.
-- `AgentNotify.Router` owns the provider router: upstream definitions, credential resolution, route
+- `Nokoo.Router` owns the provider router: upstream definitions, credential resolution, route
   selection, wire translation, and the proxy itself. It never writes notification history.
 
-Both reference `AgentNotify.Core` and `AgentNotify.Protocol`, never the other way round. Core has no
+Both reference `Nokoo.Core` and `Nokoo.Protocol`, never the other way round. Core has no
 compile-time dependency on either, so `INotificationRepository`, the lifecycle rules, and delivery
 dispatch can be built and tested without the usage readers or the proxy. The API and desktop hosts
-reference both; `AgentNotify.Core` grants them `InternalsVisibleTo` for the few shared internals
+reference both; `Nokoo.Core` grants them `InternalsVisibleTo` for the few shared internals
 (config store paths, JSON conventions) rather than widening its public surface.
 
 ### API
 
-`AgentNotify.Api` builds an embedded ASP.NET Core Minimal API host. Kestrel binds to `127.0.0.1` and all `/v1` routes pass through bearer authentication. The host uses an explicit local content root so Windows test processes launched from WSL UNC paths do not hang while probing the working directory.
+`Nokoo.Api` builds an embedded ASP.NET Core Minimal API host. Kestrel binds to `127.0.0.1` and all `/v1` routes pass through bearer authentication. The host uses an explicit local content root so Windows test processes launched from WSL UNC paths do not hang while probing the working directory.
 
 API callbacks are instance-scoped. Callback exceptions are logged and isolated from the API response, so a toast-rendering failure cannot roll back a notification already persisted to SQLite.
 
@@ -74,13 +74,13 @@ planned. See [BIDIRECTIONAL_AGENT_COMMUNICATION.md](BIDIRECTIONAL_AGENT_COMMUNIC
 
 ### Web interface
 
-`AgentNotify.Api/WebUi` mounts a browser interface on the API listener when the host supplies
-`WebUiOptions`; both `agentnotifyd` and the tray app do. The front end is plain ES modules and CSS,
+`Nokoo.Api/WebUi` mounts a browser interface on the API listener when the host supplies
+`WebUiOptions`; both `nokood` and the tray app do. The front end is plain ES modules and CSS,
 embedded as resources, with no build step, so the .NET build and the Windows CI need no Node
 toolchain. It talks only to `/ui/api`, which calls the same Core services the Settings window uses.
 
 There is no sign-in, matching the tray app. A middleware guard runs before routing: it refuses
-foreign `Host` headers (DNS rebinding) and requires `X-AgentNotify-UI: 1` plus a same-origin
+foreign `Host` headers (DNS rebinding) and requires `X-Nokoo-UI: 1` plus a same-origin
 `Origin` on every state change, so a page on another site can neither read the interface nor change
 anything through it. Loopback host names may carry a different browser-side port when an SSH local
 forward targets the broker's listening port; the guard compares a state change's `Origin` to the
@@ -163,7 +163,7 @@ caches each account for five
 minutes, limits manual rechecks to one per 30 seconds, and retains a clearly marked stale value
 after transient failure only while the credential-file scope is unchanged. Codex is queried
 through its documented `app-server` `account/rateLimits/read` RPC; Codex owns its credentials and
-AgentNotify receives only quota fields. The child process gets the Codex launcher's bin directory
+Nokoo receives only quota fields. The child process gets the Codex launcher's bin directory
 in its own `PATH` so npm's `/usr/bin/env node` launcher works under launchd. Claude Code's current
 OAuth credential is read without
 modification for a bounded, read-only request to Anthropic's account-usage endpoint; no refresh
@@ -214,8 +214,8 @@ is read through the share like any other.
 
 ### macOS quota menu bar
 
-`agentnotify-menubar` is a native Swift/AppKit accessory executable shipped only in macOS archives.
-`agentnotifyd` starts it from beside the broker after the loopback API is listening, passes only the
+`nokoo-menubar` is a native Swift/AppKit accessory executable shipped only in macOS archives.
+`nokood` starts it from beside the broker after the loopback API is listening, passes only the
 configured port, restarts it when its WebUI settings change, and stops it during broker shutdown or
 when the owner disables it. It has no Dock icon and never opens `config.json`, reads the bearer token,
 inspects an agent profile, or calls a provider directly.
@@ -250,7 +250,7 @@ disclosures. Motion is implemented with embedded CSS, includes no external runti
 
 ### Provider router
 
-`AgentNotify.Router` is an opt-in local proxy: an agent points its API base URL at the broker,
+`Nokoo.Router` is an opt-in local proxy: an agent points its API base URL at the broker,
 and the router chooses an upstream provider and model per request, translates between the OpenAI
 Responses, OpenAI Chat Completions, and Anthropic Messages wire formats, fails over across an ordered
 list of targets, and records what it did. It is off until the owner turns it on, and a broker with it
@@ -279,14 +279,14 @@ Two upstream kinds carry no key at all: a subscription upstream (`codex_chatgpt`
 authenticates with the sign-in another tool keeps on this computer, read from that tool's file at
 request time by `RouterCredentialSource`. Those tokens are held only in memory, never logged, stored,
 or returned, and go only to the preset's fixed host. Renewing Codex's sign-in writes the new tokens
-back into Codex's own `auth.json` — the one other place, beside `Router/Connect`, where AgentNotify
+back into Codex's own `auth.json` — the one other place, beside `Router/Connect`, where Nokoo
 writes another program's file — because rotating its refresh token without doing so would sign Codex
 out. Both kinds are unofficial and opt-in. Reading a key OpenCode already holds happens only on an
 explicit request from the owner, and that key is then sealed like one typed in.
 
 One credential the router never holds: an agent's **own** Anthropic sign-in. Claude Code has a single
 base URL, so a connected Claude Code sends its built-in models to the router too. It authenticates to
-the router with `x-agentnotify-router-key`, which leaves its `Authorization`/`x-api-key` carrying its
+the router with `x-nokoo-router-key`, which leaves its `Authorization`/`x-api-key` carrying its
 own credential; the router forwards that, with the request body unchanged, to
 `https://api.anthropic.com/v1` for a bare `claude-…` model no route claims, and to nothing else. It is
 per request, never stored, logged, or put in the ledger, and never sent to a configured upstream.
@@ -308,13 +308,13 @@ sent, so a later failure ends the stream with the client wire's own error event.
 
 `Router/Connect` puts routed models into an agent's own model picker by writing that agent's
 configuration: a generated model catalogue plus a provider block for Codex, a `modelPicker` list plus
-an `env` block for Claude Code. It is the only part of AgentNotify that edits another program's
+an `env` block for Claude Code. It is the only part of Nokoo that edits another program's
 files, so it is held to a narrow contract: a copy is taken before every write and any copy can be
 restored, only marker-delimited lines or named keys are touched, a key the owner set is commented out
 rather than duplicated (TOML refuses duplicates), disconnecting restores the owner's previous values,
 and a connected agent's catalogue is rewritten whenever the router's configuration changes so it never
 lists a model the router would refuse. A reconnect keeps the values recorded at the first connect,
-including a recorded "none", because what it finds in their place are AgentNotify's own. The router
+including a recorded "none", because what it finds in their place are Nokoo's own. The router
 key is written into those files deliberately, so a connected agent needs no environment variable; that
 key can spend through the router and nothing more.
 
@@ -332,13 +332,30 @@ and `omit` avoids sending unsupported fields. A value outside the five names (Op
 provider-specific word) is sent verbatim when the target supports it, and otherwise falls back to
 the default.
 
+Adaptive routing (`Nokoo.Router.Adaptive`) chooses the model before `RouteResolver` runs, so
+what it picks is resolved — smart routing included — exactly as if the agent had asked for it. It is
+held to three constraints. It never changes the model partway through a turn: only a request whose
+latest human message has no tool result after it is classified, later requests of the turn follow
+that decision, and a turn whose start it never saw keeps its model, because a tool loop that changes
+models loses its reasoning state. It can never be why a request fails: an exception, an unreadable
+Jev key, or a Jev timeout keeps the requested model or falls back to Sift, and an unreadable Sift
+model to the heuristics. And it
+writes no text: per-conversation tiers and the recent-decisions list are process-local scheduling
+state, and the ledger gets only the tier, engine, probability, reason, and direction of the move. The
+local heuristics are a fitted model whose reference implementation is `tools/adaptive-routing/feat.py`;
+the C# lexicons and weights are generated from it, and a test holds the two to the same output on
+every labelled message, so retraining means regenerating rather than hand-editing weights. Sift is
+held to the same rule: it is trained and exported in `tools/adaptive-routing/sift`, and the C# port
+must reproduce scikit-learn's probabilities on every reference prompt, so a tokenizer drift fails a
+test instead of quietly changing decisions.
+
 The ledger is proxy-observed usage and is kept separate from the log-derived Usage view and from Live
 quota. The same physical call appears in both the router ledger and the agent's own log, so the two
 are never added together.
 
 ### Desktop app
 
-`AgentNotify.App` owns the application lifetime. Startup order is:
+`Nokoo.App` owns the application lifetime. Startup order is:
 
 1. acquire the per-session named mutex;
 2. load and normalize config, generating the token when absent;
@@ -362,21 +379,21 @@ The portable Core layer validates and imports WAV/MP3 files into a managed per-u
 
 ### Installer
 
-`AgentNotify.Setup` is a WPF per-user installer. `scripts/package.sh` first publishes the tray app and CLI as self-contained single files, then embeds them, the MIT License, the skill, and the offline guide into the self-contained setup executable.
+`Nokoo.Setup` is a WPF per-user installer. `scripts/package.sh` first publishes the tray app and CLI as self-contained single files, then embeds them, the licence, the skill, and the offline guide into the self-contained setup executable.
 
 Setup treats a run as an update when this user's uninstall registration names a folder that still
-contains `AgentNotify.Tray.exe`. An update keeps that folder and the startup/shortcut choices and
-does not ask for the licence again. It stops the tray by setting `Local\AgentNotify.Exit.v1`, an
+contains `Nokoo.Tray.exe`. An update keeps that folder and the startup/shortcut choices and
+does not ask for the licence again. It stops the tray by setting `Local\Nokoo.Exit.v1`, an
 auto-reset event the single-instance owner creates next to its show-center event; the tray answers
 with the same shutdown as its Exit menu item, and setup kills a tray that has not exited after ten
-seconds. `agentnotify.exe` is never stopped, since an agent may be blocked in it: when a payload
+seconds. `nokoo.exe` is never stopped, since an agent may be blocked in it: when a payload
 file is in use, setup renames it to `<name>.<id>.old` (Windows permits renaming a running image),
 moves the new file into place, and deletes those leftovers on the next install or uninstall.
 
 Installed filenames deliberately differ on case-insensitive Windows filesystems:
 
-- `AgentNotify.Tray.exe` — background UI/API process;
-- `agentnotify.exe` — command-line client.
+- `Nokoo.Tray.exe` — background UI/API process;
+- `nokoo.exe` — command-line client.
 
 ## Persistence
 

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: "AgentNotify — the agent control plane, with notifications built in", template: "%s · AgentNotify" },
+  title: { default: "Nokoo — the agent control plane, with notifications built in", template: "%s · Nokoo" },
   description: site.description,
   manifest: `${basePath}/favicon/site.webmanifest`,
   icons: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: site.url,
-    title: "AgentNotify",
+    title: "Nokoo",
     description: site.description,
     images: [`${site.url}/an.png`],
   },

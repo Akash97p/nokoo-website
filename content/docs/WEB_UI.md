@@ -5,9 +5,8 @@ Center manage. It runs wherever the broker runs, so macOS and Linux get the same
 surface as Windows, and nothing extra is installed.
 
 A copy of this interface runs at
-[akash97p.github.io/agent-notify/demo/](https://akash97p.github.io/agent-notify/demo/). It is the
-same `wwwroot` the broker serves — staged by `scripts/build-site.sh`, which fails if it stops
-matching — with `js/api.js` replaced by a shim that answers from invented fixtures instead of the
+[nokoo.ai/demo/](https://nokoo.ai/demo/). It is the
+same `wwwroot` the broker serves — copied by the website repository's `scripts/sync-content.sh` — with `js/api.js` replaced by a shim that answers from invented fixtures instead of the
 API. Use it to see a page before installing; changes there live in the browser tab and nothing else.
 
 This guide describes the current development source. The tagged `v0.2.0-alpha.3` release includes
@@ -16,7 +15,7 @@ and native macOS per-account quota items. Features merged after that tag still r
 build until the next release.
 
 ```bash
-agentnotify ui
+nokoo ui
 ```
 
 That opens `http://127.0.0.1:47821/ui/` (your configured port) in the default browser. You can also
@@ -66,7 +65,7 @@ quota — reads the same account list, so a profile discovered or added in one a
 | Settings → Sounds | Global and per-type sounds, volume, WAV/MP3 upload, and preview |
 | Agents | Every Codex and Claude Code account (the same list as Live quota, including second profiles such as `~/.claude-second`) with its skill state, an install button, and whether its hook harness is installed, with the exact command for that account; then the skill and harness for every other host |
 | Model router → Providers | Turn the router on; add a provider from a gallery, reusing a key from API accounts or OpenCode; the ChatGPT plan adds one provider per signed-in Codex account by itself; tick fetched models |
-| Model router → Routing | The smart routing switch and the models it can move between providers; optional nicknames and fallback chains, where an unknown model goes, and how switching starts each request (ordered, sticky, round-robin) plus Claude Code's cross-model fallback |
+| Model router → Routing | Smart routing first — how switching starts each request (ordered, sticky, round-robin), Claude Code's cross-model fallback, and the models it can move between providers; then Adaptive routing — a model per tier (light, standard, deep), Sift, the heuristics, or Jev with your own key, a live prompt preview comparing them, the week's counts, and recent decisions; then optional nicknames and fallback chains, and where an unknown model goes |
 | Model router → Agents | Connect any of those Codex and Claude Code accounts so its own `/model` menu lists routed models, set subagent and review models, disconnect, and restore a saved copy of its configuration |
 | Model router → Activity | The router's request ledger and per-model totals |
 | Model router → Effort mapping | One effort table per model family, with per-model overrides; covers Claude Code's and Codex's efforts |
@@ -77,7 +76,7 @@ quota — reads the same account list, so a profile discovered or added in one a
 
 The **Model router** pages configure the opt-in local provider proxy described in
 [ROUTER.md](ROUTER.md). The router key is shown once when it is generated or regenerated and never
-returned afterwards; `agentnotify router key` prints it from the local config. Upstream provider keys
+returned afterwards; `nokoo router key` prints it from the local config. Upstream provider keys
 are write-only in exactly the same way as channel secrets: the field stays blank when editing, and no
 response carries a stored key.
 
@@ -182,9 +181,9 @@ new catalog snapshot. Published Go cache-write rates are included for MiniMax M2
 Max/Flash and Qwen3.7 Max; a Go cache-write record is unpriced when Go publishes no cache-write rate.
 
 Live quota is fetched when its page is opened or **Check now** is pressed. Codex uses its own
-documented app-server RPC, so AgentNotify does not read Codex credentials. Claude Code uses its
+documented app-server RPC, so Nokoo does not read Codex credentials. Claude Code uses its
 current local OAuth access token for a read-only call to Anthropic's first-party account-usage
-endpoint; AgentNotify does not refresh or store that token. This Claude endpoint is not a stable
+endpoint; Nokoo does not refresh or store that token. This Claude endpoint is not a stable
 public API and can become unavailable. Neither source sends token text, account email, or raw
 provider responses to the browser. Snapshots are cached for five minutes; a manual recheck is
 limited to once every 30 seconds. A failed check keeps the last known result marked *stale* for
@@ -197,8 +196,8 @@ The local Usage page continues to work without internet or signed-in agent accou
 
 ### macOS menu bar
 
-On macOS, the broker starts `agentnotify-menubar` when that executable is installed beside
-`agentnotifyd` and **Show five-hour quota in the macOS menu bar** is enabled. Each account selected on
+On macOS, the broker starts `nokoo-menubar` when that executable is installed beside
+`nokood` and **Show five-hour quota in the macOS menu bar** is enabled. Each account selected on
 Live quota gets its own status item: the Claude starburst or OpenAI knot (Codex), then that account's
 five-hour percentage. A selected account without a current five-hour value displays `--%`. Select all
 accounts to store an empty filter, meaning every monitored account. Clicking any item opens the same
@@ -238,12 +237,12 @@ CLAUDE_CONFIG_DIR="$HOME/.claude-second" claude auth login
 On Windows PowerShell, set `$env:CODEX_HOME` or `$env:CLAUDE_CONFIG_DIR` to a separate directory
 under `$HOME` before running `codex login` or `claude`. These are the agents' own documented profile
 switches: [Codex config location](https://learn.chatgpt.com/docs/config-file/config-advanced) and
-[Claude Code environment variables](https://code.claude.com/docs/en/env-vars). AgentNotify does not
+[Claude Code environment variables](https://code.claude.com/docs/en/env-vars). Nokoo does not
 copy a login or offer a password field. Codex is queried with that profile's `CODEX_HOME`; Claude
 Code is queried only when that profile has a readable `.credentials.json`. Claude Code may store
 credentials in the macOS Keychain instead, so an extra macOS Claude profile can show unavailable
 until its agent-owned credential file is present. Removing a monitored account removes only its
-AgentNotify entry, not its agent profile or sign-in. Every account in **Manage accounts** — the
+Nokoo entry, not its agent profile or sign-in. Every account in **Manage accounts** — the
 current Codex and Claude Code profiles, the ones discovered in WSL, and those you added — has an
 editable name and profile directory and can be removed. A current or discovered account that is
 removed is listed under **Removed accounts** with **Restore**, since it would otherwise be found
@@ -309,7 +308,7 @@ to reach it. None of them is visible when you use the page.
   and port are accepted. A DNS-rebinding page reaches the port under its own host name and gets
   `421 Misdirected Request` before any handler runs.
 - **Cross-site changes are refused.** Every state-changing request must carry
-  `X-AgentNotify-UI: 1` and, when the browser sends one, an `Origin` matching the request's exact
+  `X-Nokoo-UI: 1` and, when the browser sends one, an `Origin` matching the request's exact
   loopback host and port. A form on another
   site cannot set that header, and script on another site cannot send it without a CORS preflight
   the broker never grants.
@@ -328,7 +327,7 @@ to reach it. None of them is visible when you use the page.
 
 Some settings have no control, on purpose or for now:
 
-- `authToken` is shown only by `agentnotify token`. It guards the `/v1` API agents use, not this page.
+- `authToken` is shown only by `nokoo token`. It guards the `/v1` API agents use, not this page.
 - `maxRequestBodyBytes`, `rateLimitPerSecond`, and `maxMetadataBytes` are file edits.
 - *Start with Windows* stays in the tray menu, because the registry is its source of truth.
 - Harnesses are installed from a terminal. A harness edits another program's configuration, so the

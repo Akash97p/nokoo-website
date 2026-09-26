@@ -1,13 +1,16 @@
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const site = {
-  name: "AgentNotify",
+  name: "Nokoo",
   tagline: "The local control plane for coding agents — with notifications built in.",
   description:
     "The local control plane for coding agents: route model calls, measure usage and cost, watch live quota, and get notified — and answer — when an agent needs you.",
   url: process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "http://localhost:3000",
+    : "https://nokoo.ai",
+  /** The hosted relay, where accounts are created and plans are bought. */
+  relayUrl: process.env.NEXT_PUBLIC_RELAY_URL ?? "https://relay.nokoo.ai",
+  contact: "legal@kabanitech.com",
 } as const;
 
 /** Documentation entry point. There is no separate documentation landing page. */
@@ -18,6 +21,7 @@ export const navigation = [
   { label: "Insights", href: "/insights/" },
   { label: "Channels", href: "/channels/" },
   { label: "Relay", href: "/relay/" },
+  { label: "Pricing", href: "/pricing/" },
   { label: "ARC", href: "/arc/" },
   { label: "Documentation", href: docsEntry },
 ] as const;

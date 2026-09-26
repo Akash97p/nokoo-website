@@ -1,8 +1,8 @@
 # Installing on macOS and Linux
 
 Windows gets the full tray application and a single-file installer. macOS and Linux get the same
-background broker (`agentnotifyd`) and `agentnotify` command-line client; macOS archives also contain
-a native quota-only status item (`agentnotify-menubar`) that the broker owns. The API, bearer token,
+background broker (`nokood`) and `nokoo` command-line client; macOS archives also contain
+a native quota-only status item (`nokoo-menubar`) that the broker owns. The API, bearer token,
 notification model, and `SKILL.md` are identical on all three platforms, so an agent written against
 the Windows build needs no changes.
 
@@ -23,31 +23,31 @@ curl -fsSL https://raw.githubusercontent.com/Akash97p/agent-notify/main/scripts/
 
 The script detects your platform, downloads the matching archive from GitHub Releases, **verifies
 its SHA-256 against the published checksum file**, and installs the CLI and broker into
-`~/.local/bin`; a macOS archive that contains `agentnotify-menubar` installs that third executable too.
+`~/.local/bin`; a macOS archive that contains `nokoo-menubar` installs that third executable too.
 It refuses to install anything it cannot verify. With no version override, it selects the newest
-published release, including a prerelease; set `AGENTNOTIFY_VERSION` to pin an exact tag. The current
+published release, including a prerelease; set `NOKOO_VERSION` to pin an exact tag. The current
 `v0.2.0-alpha.3` archive includes the native macOS menu-bar executable.
 
 To install elsewhere or pin a version:
 
 ```sh
-AGENTNOTIFY_PREFIX=/usr/local/bin AGENTNOTIFY_VERSION=v0.2.0-alpha.3 sh install.sh
+NOKOO_PREFIX=/usr/local/bin NOKOO_VERSION=v0.2.0-alpha.3 sh install.sh
 ```
 
 ### Manual install
 
 Download the archive for your platform from the
-[releases page](https://github.com/Akash97p/agent-notify/releases), check it against
+releases page on [nokoo.ai](https://nokoo.ai/), check it against
 `SHA256SUMS.txt`, then:
 
 ```sh
-tar -xzf agentnotify-linux-x64.tar.gz
-install -m 0755 agentnotify-linux-x64/agentnotify  ~/.local/bin/
-install -m 0755 agentnotify-linux-x64/agentnotifyd ~/.local/bin/
+tar -xzf nokoo-linux-x64.tar.gz
+install -m 0755 nokoo-linux-x64/nokoo  ~/.local/bin/
+install -m 0755 nokoo-linux-x64/nokood ~/.local/bin/
 ```
 
-For macOS, use the matching `agentnotify-osx-*` directory and also install
-`agentnotify-menubar` beside `agentnotifyd`.
+For macOS, use the matching `nokoo-osx-*` directory and also install
+`nokoo-menubar` beside `nokood`.
 
 Supported archives: `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `win-x64` for a portable
 Windows copy without the installer.
@@ -56,23 +56,23 @@ macOS marks downloaded binaries with a quarantine attribute. These builds are no
 the first run needs:
 
 ```sh
-xattr -d com.apple.quarantine ~/.local/bin/agentnotify ~/.local/bin/agentnotifyd \
-  ~/.local/bin/agentnotify-menubar
-codesign --force --sign - ~/.local/bin/agentnotify ~/.local/bin/agentnotifyd \
-  ~/.local/bin/agentnotify-menubar
+xattr -d com.apple.quarantine ~/.local/bin/nokoo ~/.local/bin/nokood \
+  ~/.local/bin/nokoo-menubar
+codesign --force --sign - ~/.local/bin/nokoo ~/.local/bin/nokood \
+  ~/.local/bin/nokoo-menubar
 ```
 
 ## Run the broker
 
 ```sh
-agentnotifyd
+nokood
 ```
 
 It prints the address it listens on, how provider secrets are protected, and which notification
 backend it selected:
 
 ```text
-AgentNotify broker listening on http://127.0.0.1:47821
+Nokoo broker listening on http://127.0.0.1:47821
   secrets      : Secret Service keyring via secret-tool
   notifications: notify-send
 Press Ctrl+C to stop.
@@ -90,14 +90,14 @@ Options:
 Then, from any shell:
 
 ```sh
-agentnotify health
-agentnotify send --agent codex --project payments --type input_required \
+nokoo health
+nokoo send --agent codex --project payments --type input_required \
   --key payments-decision --title "Need a decision" --message "Normalized or denormalized?"
 ```
 
-Open the broker's local web interface with `agentnotify ui`. It provides settings, channels,
+Open the broker's local web interface with `nokoo ui`. It provides settings, channels,
 questions, history, and an Insights area for local usage, API-equivalent cost estimates, and live
-Codex/Claude Code quota. On macOS the broker automatically starts `agentnotify-menubar` after the API
+Codex/Claude Code quota. On macOS the broker automatically starts `nokoo-menubar` after the API
 is ready; configure its enabled state, refresh interval, and menu-bar accounts on Live quota. See
 [WEB_UI.md](WEB_UI.md) for account setup, polling/estimate limits, and SSH forwarding.
 
@@ -105,15 +105,15 @@ is ready; configure its enabled state, refresh interval, and menu-bar accounts o
 
 ### Linux (systemd user service)
 
-Create `~/.config/systemd/user/agentnotify.service`:
+Create `~/.config/systemd/user/nokoo.service`:
 
 ```ini
 [Unit]
-Description=AgentNotify broker
+Description=Nokoo broker
 After=graphical-session.target
 
 [Service]
-ExecStart=%h/.local/bin/agentnotifyd
+ExecStart=%h/.local/bin/nokood
 Restart=on-failure
 
 [Install]
@@ -122,24 +122,24 @@ WantedBy=default.target
 
 ```sh
 systemctl --user daemon-reload
-systemctl --user enable --now agentnotify
+systemctl --user enable --now nokoo
 ```
 
-`agentnotifyd` stops cleanly on `SIGTERM`, so `systemctl --user stop agentnotify` shuts the broker
+`nokood` stops cleanly on `SIGTERM`, so `systemctl --user stop nokoo` shuts the broker
 down rather than killing it.
 
 ### macOS (launchd agent)
 
-Create `~/Library/LaunchAgents/dev.agentnotify.broker.plist`:
+Create `~/Library/LaunchAgents/ai.nokoo.broker.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>dev.agentnotify.broker</string>
+  <key>Label</key><string>ai.nokoo.broker</string>
   <key>ProgramArguments</key>
-  <array><string>/Users/YOUR_USER/.local/bin/agentnotifyd</string></array>
+  <array><string>/Users/YOUR_USER/.local/bin/nokood</string></array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
 </dict>
@@ -147,7 +147,7 @@ Create `~/Library/LaunchAgents/dev.agentnotify.broker.plist`:
 ```
 
 ```sh
-launchctl load ~/Library/LaunchAgents/dev.agentnotify.broker.plist
+launchctl load ~/Library/LaunchAgents/ai.nokoo.broker.plist
 ```
 
 ## Desktop notifications
@@ -167,12 +167,12 @@ active in history until it is resolved.
 
 | Path | Contents |
 | --- | --- |
-| `$XDG_DATA_HOME/AgentNotify` or `~/.local/share/AgentNotify` | Everything below |
+| `$XDG_DATA_HOME/Nokoo` or `~/.local/share/Nokoo` | Everything below |
 | `config.json` | Settings **and the local bearer token** |
-| `agentnotify.db` | Notification history |
+| `nokoo.db` | Notification history |
 | `secret.key` | Present only when no keyring is available |
 | `logs/` | Daily log files |
-| `agentnotifyd.lock` | Single-instance lock |
+| `nokood.lock` | Single-instance lock |
 
 The directory is created `0700` and those files `0600`. Do not copy or commit `config.json`: anyone
 holding the token can post notifications to your broker.
@@ -194,7 +194,7 @@ Installing `secret-tool` before configuring providers gets you the stronger opti
 ## What is missing compared with Windows
 
 macOS has a native quota status item, but no native notification center or Settings window. Linux has
-no tray. The broker serves those full surfaces in a browser: run `agentnotify ui` (see
+no tray. The broker serves those full surfaces in a browser: run `nokoo ui` (see
 [WEB_UI.md](WEB_UI.md)). Toast placement and sounds are Windows-app settings; here the platform's
 notification service decides both. A full macOS client and Linux tray remain planned; see
 [CROSS_PLATFORM.md](CROSS_PLATFORM.md).
@@ -206,9 +206,9 @@ Most symptoms and fixes are shared with Windows and live in
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `AgentNotify is already running for this user` | Another `agentnotifyd` holds the lock | `agentnotify health`; stop the other instance, or pass a different `--config-dir` |
+| `Nokoo is already running for this user` | Another `nokood` holds the lock | `nokoo health`; stop the other instance, or pass a different `--config-dir` |
 | Broker starts but nothing appears on screen | No `notify-send`, or no graphical session | Install `libnotify-bin`; over SSH the console fallback is expected |
 | `notifications: console` on a desktop machine | `DISPLAY`/`WAYLAND_DISPLAY` not visible to the service | Ensure the user service inherits the graphical session environment |
 | Startup warns about the key file | No keyring found | Install and unlock `secret-tool`, then re-enter provider credentials |
 | macOS refuses to run a binary | Quarantine or an unacceptable ad-hoc signature | Clear quarantine and run `codesign --force --sign -` on the CLI, broker, and menu-bar executable |
-| Broker runs but no quota percentage appears | Menu-bar executable absent/disabled, or no five-hour window | Install it beside `agentnotifyd`; enable it on Live quota; inspect the broker log for the one-time missing-binary warning |
+| Broker runs but no quota percentage appears | Menu-bar executable absent/disabled, or no five-hour window | Install it beside `nokood`; enable it on Live quota; inspect the broker log for the one-time missing-binary warning |

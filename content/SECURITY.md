@@ -2,13 +2,13 @@
 
 ## Supported versions
 
-Security fixes target the latest released AgentNotify version. This repository currently represents prerelease version `0.2.0-alpha.3`; the first mature release is reserved for `1.0.0`.
+Security fixes target the latest released Nokoo version. This repository currently represents prerelease version `0.2.0-alpha.3`; the first mature release is reserved for `1.0.0`.
 
 ## Reporting a vulnerability
 
 Do not disclose an exploitable issue in a public GitHub issue. Contact the repository owner through a private GitHub contact channel and include:
 
-- affected AgentNotify version and operating-system version;
+- affected Nokoo version and operating-system version;
 - reproduction steps or a minimal proof of concept;
 - expected and observed behavior;
 - impact, especially whether another local process can read or modify notifications; and
@@ -26,7 +26,7 @@ point-in-time review rather than a certification, and the open findings are trac
 
 ## Trust boundary
 
-AgentNotify assumes the signed-in operating-system user controls processes in that user session. Its API is protected by:
+Nokoo assumes the signed-in operating-system user controls processes in that user session. Its API is protected by:
 
 - binding exclusively to `127.0.0.1`;
 - a randomly generated per-user bearer token;
@@ -36,7 +36,7 @@ AgentNotify assumes the signed-in operating-system user controls processes in th
 
 The token prevents accidental or unsophisticated calls from unrelated local software. It is not a defense against malware already running as the same OS user, which can generally read that user’s files and process environment.
 
-`config.json` contains the token: `%LOCALAPPDATA%\AgentNotify\config.json` on Windows and `$XDG_DATA_HOME/AgentNotify/config.json` (normally `~/.local/share/AgentNotify/config.json`) on macOS/Linux. Do not attach it to issues, commit it, print it in agent output, or send it to external services. Logs intentionally omit the token.
+`config.json` contains the token: `%LOCALAPPDATA%\Nokoo\config.json` on Windows and `$XDG_DATA_HOME/Nokoo/config.json` (normally `~/.local/share/Nokoo/config.json`) on macOS/Linux. Do not attach it to issues, commit it, print it in agent output, or send it to external services. Logs intentionally omit the token.
 
 ### Web interface
 
@@ -60,7 +60,7 @@ APIs.
 Live quota is a separate on-demand feature. Codex quota is requested through the locally
 installed Codex app-server RPC, which owns its authentication. Claude Code quota uses a bounded
 read-only request to the fixed `https://api.anthropic.com/api/oauth/usage` endpoint with the
-current local OAuth access token. AgentNotify never stores, refreshes, logs, or returns that
+current local OAuth access token. Nokoo never stores, refreshes, logs, or returns that
 token, disables redirects and ambient proxies, and gives generic failure messages. The response
 is reduced to percentages, reset times, optional plan/credit data, source, and freshness. The
 Claude endpoint is a first-party implementation dependency without a stable public API contract;
@@ -81,23 +81,33 @@ configuration file. The WebUI accepts absolute directories under the broker user
 never passwords or token text. The profile-management page returns these paths to its local owner;
 the quota report still returns no credential paths or account emails. Codex credentials stay with
 Codex in the selected `CODEX_HOME`. The Claude probe reads the selected agent-owned credential
-file without copying it into AgentNotify storage. OpenCode Go estimates read only local usage
+file without copying it into Nokoo storage. OpenCode Go estimates read only local usage
 scalars and are labeled as incomplete local observations, never provider-confirmed balance.
 
 API-account balance/spend checks are also explicit and on demand. Keys are encrypted, write-only,
 and sent only to the selected provider's fixed official host. Prefer a dedicated least-privilege key:
 OpenAI and Anthropic Admin keys can manage an entire organization, not merely read a personal
-balance, and any process already running as this OS user can ask AgentNotify to use stored
+balance, and any process already running as this OS user can ask Nokoo to use stored
 credentials. The WebUI requires a separate acknowledgement before saving one.
 
 ### Provider router
 
 The model router is an optional local proxy and is off by default. When it is off, `/router` returns
-`404` and AgentNotify makes no model-provider request. When enabled it accepts OpenAI Responses,
+`404` and Nokoo makes no model-provider request. When enabled it accepts OpenAI Responses,
 OpenAI Chat Completions, and Anthropic Messages shapes on loopback, translates when needed, and sends
 the prompt/conversation content to the configured upstream provider. Enabling it therefore expands
 the trust boundary beyond local notification data: prompts, tool arguments/results, images, and any
 other supported request content necessarily leave the machine for the provider selected by routing.
+
+Adaptive routing is off by default, and its local engines — Sift, the default, and the heuristics —
+send nothing anywhere.
+Choosing Jev as its engine is a second, separate opt-in: once per turn, the latest message the person
+typed — cleaned of agent-injected context and cut to 4,000 characters, never the conversation,
+system prompt, tools, or files — goes to TypeSafe AI at the fixed `https://api.typesafe.ai/v1/systemone`
+with the owner's own key. That key is sealed with the same protector as upstream keys, is write-only
+in the web interface, and is sent to that endpoint only. Adaptive routing stores no message text:
+the ledger records only the tier, engine, probability, and reason, and the Routing page's recent
+decisions (the first 80 characters of each) are held in memory.
 
 Router protections are deliberately separate from notification access:
 
@@ -117,7 +127,7 @@ Router protections are deliberately separate from notification access:
   undocumented provider interfaces. They are clearly labeled unofficial and remain opt-in.
 
 Connecting Codex or Claude Code can modify that agent's configuration only after an explicit local
-UI/CLI action; AgentNotify first creates a restorable copy. See [docs/ROUTER.md](docs/ROUTER.md) for
+UI/CLI action; Nokoo first creates a restorable copy. See [docs/ROUTER.md](docs/ROUTER.md) for
 the exact routes, formats, failover rules, subscription caveats, and file changes.
 
 ## External-channel requirements
@@ -147,15 +157,15 @@ DPAPI has no equivalent on macOS or Linux, so the portable broker selects a prot
 | Linux | AES-GCM under a 256-bit key in the Secret Service keyring (`secret-tool`) | `aes-gcm:v1:` |
 | macOS/Linux without a keyring | AES-GCM under a `0600` key file in the config directory | `aes-gcm:v1:` |
 
-The key-file fallback is the weakest of these and is deliberately visible: the broker logs a warning at startup and `agentnotifyd` prints one to the console. Any process running as the same user can read `secret.key` and therefore decrypt stored provider credentials. It exists so a machine with no keyring still runs, not because it is equivalent protection.
+The key-file fallback is the weakest of these and is deliberately visible: the broker logs a warning at startup and `nokood` prints one to the console. Any process running as the same user can read `secret.key` and therefore decrypt stored provider credentials. It exists so a machine with no keyring still runs, not because it is equivalent protection.
 
 A corrupted key file is a hard error rather than a silent regeneration, because a new key would make every stored provider credential undecryptable.
 
-On Unix the per-user data directory is created `0700`, and `config.json` (which holds the local bearer token), `agentnotify.db`, and `secret.key` are created `0600`. Windows relies on the per-user profile ACL as before. `Environment.SpecialFolder.LocalApplicationData` returns an empty string on Unix when the base directory does not yet exist, so the data directory is always resolved to an absolute path — otherwise the token and database would be written into whatever working directory the broker was started from.
+On Unix the per-user data directory is created `0700`, and `config.json` (which holds the local bearer token), `nokoo.db`, and `secret.key` are created `0600`. Windows relies on the per-user profile ACL as before. `Environment.SpecialFolder.LocalApplicationData` returns an empty string on Unix when the base directory does not yet exist, so the data directory is always resolved to an absolute path — otherwise the token and database would be written into whatever working directory the broker was started from.
 
 DPAPI protects data at rest from other users and casual file disclosure. It does not defend against malware already executing as the same Windows user. Backups containing encrypted credentials may not be decryptable under another user profile or machine; migration/export tooling must omit secrets by default and require re-entry.
 
-Every outbound adapter must use TLS by default, validate certificates, bound response bodies and timeouts, redact sensitive URLs/headers, and apply provider-specific retry and idempotency rules. Generic endpoints and self-hosted services require explicit destination validation so a compromised local caller cannot turn AgentNotify into an unrestricted network proxy.
+Every outbound adapter must use TLS by default, validate certificates, bound response bodies and timeouts, redact sensitive URLs/headers, and apply provider-specific retry and idempotency rules. Generic endpoints and self-hosted services require explicit destination validation so a compromised local caller cannot turn Nokoo into an unrestricted network proxy.
 
 The generic webhook adapter stores its complete endpoint URL as an encrypted secret, requires HTTPS, disables redirects/cookies/proxies, rejects unsafe headers, and validates every DNS result at socket-connect time. Private destinations require explicit opt-in; link-local/cloud-metadata and non-unicast ranges remain blocked even then. HMAC signing uses a separately encrypted key. See [docs/CHANNELS.md](docs/CHANNELS.md).
 
@@ -181,19 +191,19 @@ The ntfy adapter encrypts the topic and optional access token, publishes JSON to
 
 The Gotify adapter encrypts the application token and sends it only in `X-Gotify-Key`, never in the query string. Self-hosted servers require HTTPS, normal certificate validation, and explicit private-network consent. Messages are forced to `text/plain`; remote images, click URLs, Android intents, and action extras are intentionally omitted so agent-provided content cannot turn a notification into an external request or executable client action. Gotify has no documented request-idempotency key, so an ambiguous network failure can still produce a duplicate.
 
-The Pushover adapter encrypts the application token, user/group key, and optional device restriction. It posts URL-encoded plain text only to the exact official `api.pushover.net` HTTPS message endpoint, validates every DNS result at connection time, and disables redirects, cookies, proxies, and decompression. Critical-to-emergency mapping is opt-in because it repeats alerts until acknowledgement or expiry. Pushover declares all 4xx responses non-retryable; AgentNotify follows that rule, including quota-related 429 responses. The API has no request idempotency key, so an ambiguous network failure can still produce a duplicate.
+The Pushover adapter encrypts the application token, user/group key, and optional device restriction. It posts URL-encoded plain text only to the exact official `api.pushover.net` HTTPS message endpoint, validates every DNS result at connection time, and disables redirects, cookies, proxies, and decompression. Critical-to-emergency mapping is opt-in because it repeats alerts until acknowledgement or expiry. Pushover declares all 4xx responses non-retryable; Nokoo follows that rule, including quota-related 429 responses. The API has no request idempotency key, so an ambiguous network failure can still produce a duplicate.
 
 The Pushbullet adapter encrypts the personal access token and optional device/channel/email target. The token grants full account access, so it is never returned by profile reads or placed in a URL/body. Requests go only to the official HTTPS Pushes endpoint through a public-DNS-only connection. The adapter sends plain `note` objects without file uploads, remote URLs, or source/client targeting; a stable opaque `guid` reduces retry duplicates. Email targeting is explicit because Pushbullet may fall back to ordinary email delivery. Pushbullet describes GUID idempotency as only “mostly” idempotent, so duplicates remain possible after ambiguous failures.
 
-The Twilio SMS adapter encrypts the Account SID, API-key SID/secret or Auth Token, single recipient, and sender. Standard/restricted API keys are recommended; Account SID/Auth Token mode is labeled for local testing only. Paid sending requires explicit consent and a minimum-priority floor. AgentNotify emits one text-only SMS segment, requests content discard/address obfuscation, leaves Twilio risk checks enabled, and never supplies media, callbacks, or active links. Because the create-message API has no documented idempotency mechanism, all handled ambiguous network/timeout/5xx/success failures are terminal rather than retried; only a definite 429 rate-limit response retries. A process or machine failure after provider acceptance but before local completion can still be recovered and replayed. Users remain responsible for Twilio geo permissions, sender registration, usage triggers, legal consent, and a durable account spend ceiling.
+The Twilio SMS adapter encrypts the Account SID, API-key SID/secret or Auth Token, single recipient, and sender. Standard/restricted API keys are recommended; Account SID/Auth Token mode is labeled for local testing only. Paid sending requires explicit consent and a minimum-priority floor. Nokoo emits one text-only SMS segment, requests content discard/address obfuscation, leaves Twilio risk checks enabled, and never supplies media, callbacks, or active links. Because the create-message API has no documented idempotency mechanism, all handled ambiguous network/timeout/5xx/success failures are terminal rather than retried; only a definite 429 rate-limit response retries. A process or machine failure after provider acceptance but before local completion can still be recovered and replayed. Users remain responsible for Twilio geo permissions, sender registration, usage triggers, legal consent, and a durable account spend ceiling.
 
-The WhatsApp Cloud adapter encrypts the Meta system-user token, phone-number ID, and single E.164 recipient. It connects only to the exact public `graph.facebook.com/{version}/{phone-number-id}/messages` endpoint and accepts a strictly validated configurable Graph version. A profile cannot be saved or used without explicit recipient-opt-in, approved-template, and paid-send acknowledgements. AgentNotify sends only approved text templates with an allowlisted fixed-field variable mapping; it never sends free-form session messages, media, interactive buttons, URLs, or agent-selected recipients. A critical-only cost floor is the default. Meta documents no create-message idempotency key, so handled network/timeout/5xx/malformed-success ambiguity is terminal and only a definite 429 retries. Process or machine failure after provider acceptance can still replay. Users remain responsible for Meta business verification, template approval, recipient consent and opt-out handling, billing, quality rating, token rotation, and account controls.
+The WhatsApp Cloud adapter encrypts the Meta system-user token, phone-number ID, and single E.164 recipient. It connects only to the exact public `graph.facebook.com/{version}/{phone-number-id}/messages` endpoint and accepts a strictly validated configurable Graph version. A profile cannot be saved or used without explicit recipient-opt-in, approved-template, and paid-send acknowledgements. Nokoo sends only approved text templates with an allowlisted fixed-field variable mapping; it never sends free-form session messages, media, interactive buttons, URLs, or agent-selected recipients. A critical-only cost floor is the default. Meta documents no create-message idempotency key, so handled network/timeout/5xx/malformed-success ambiguity is terminal and only a definite 429 retries. Process or machine failure after provider acceptance can still replay. Users remain responsible for Meta business verification, template approval, recipient consent and opt-out handling, billing, quality rating, token rotation, and account controls.
 
 The Twilio WhatsApp adapter encrypts the Account and credential SIDs/secrets, single E.164 recipient, WhatsApp-enabled Messaging Service SID, and approved Content SID. A profile requires separate recipient-opt-in, approved-template, text-only-template, and paid-send acknowledgements. The adapter supplies only `ContentSid`, an allowlisted numbered `ContentVariables` object, and `whatsapp:` recipient through the official Messages endpoint; it never supplies a free-form body, sender override, media, dynamic URL, or callback. A critical-only cost floor is the default. Handled ambiguous results do not retry because Twilio documents no create-message idempotency key; only a definite 429 retries. Process or machine failure after provider acceptance can still replay. Operators remain responsible for Twilio/Meta onboarding, template state, opt-outs, billing, quality, token rotation, and account controls.
 
-The MQTT adapter encrypts the exact non-wildcard topic, username/password, and optional client-certificate thumbprint. TLS 1.2/1.3 with normal Windows chain, hostname, and revocation validation is mandatory; there is no certificate-bypass setting. Every DNS answer is validated against the explicit public/private network policy, then MQTTnet connects to a pinned IP endpoint while using the configured broker host for SNI and certificate verification. mTLS private keys remain in the Windows Current User Personal certificate store and are never copied into SQLite; selection requires a currently valid private-key certificate with compatible digital-signature and client-authentication usage. Publishes are MQTT 5 JSON, non-retained, bounded to 16 KiB, and carry stable opaque delivery identifiers for consumer deduplication. QoS 0 is not replayed after handled ambiguity; QoS 1/2 require explicit duplicate-risk acknowledgement because a new AgentNotify outbox attempt or session can still duplicate despite protocol-level guarantees. Anonymous TLS requires separate acknowledgement. Link-local, metadata, multicast, documentation, and mixed-policy DNS answers remain blocked.
+The MQTT adapter encrypts the exact non-wildcard topic, username/password, and optional client-certificate thumbprint. TLS 1.2/1.3 with normal Windows chain, hostname, and revocation validation is mandatory; there is no certificate-bypass setting. Every DNS answer is validated against the explicit public/private network policy, then MQTTnet connects to a pinned IP endpoint while using the configured broker host for SNI and certificate verification. mTLS private keys remain in the Windows Current User Personal certificate store and are never copied into SQLite; selection requires a currently valid private-key certificate with compatible digital-signature and client-authentication usage. Publishes are MQTT 5 JSON, non-retained, bounded to 16 KiB, and carry stable opaque delivery identifiers for consumer deduplication. QoS 0 is not replayed after handled ambiguity; QoS 1/2 require explicit duplicate-risk acknowledgement because a new Nokoo outbox attempt or session can still duplicate despite protocol-level guarantees. Anonymous TLS requires separate acknowledgement. Link-local, metadata, multicast, documentation, and mixed-policy DNS answers remain blocked.
 
-The AgentNotify Relay adapter and pairing client share one hardened transport: redirects, cookies,
+The Nokoo Relay adapter and pairing client share one hardened transport: redirects, cookies,
 ambient proxies, and automatic decompression are disabled; every DNS answer is checked immediately
 before a pinned-IP connection; private destinations require explicit consent; and HTTP is accepted
 only for consented localhost development. Pairing first verifies the Relay discovery document and

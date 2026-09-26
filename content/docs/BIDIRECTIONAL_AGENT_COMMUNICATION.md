@@ -11,7 +11,7 @@ test the versions they support.
 
 ## What is implemented
 
-AgentNotify now persists bounded questions and permissions in SQLite, exposes authenticated
+Nokoo now persists bounded questions and permissions in SQLite, exposes authenticated
 loopback request/list/wait/respond/cancel routes and CLI commands, and accepts the first valid
 answer. The local WebUI answers pending questions. Codex and Claude Code `--ask` hooks pause a
 live permission request and return an allow/deny decision to that same session; on timeout or
@@ -32,12 +32,12 @@ Two integration modes shape further work:
 1. **Direct/native adapters** use a coding agent's supported hooks, plugin API, SDK, gateway, or RPC
    surface. Codex/Claude ask hooks, Hermes, and OpenClaw already use this path; other hosts need
    verified decision schemas before they can return an answer to an existing session.
-2. **Managed Agent Client Protocol sessions** would let an AgentNotify bridge start an ACP-capable
+2. **Managed Agent Client Protocol sessions** would let a Nokoo bridge start an ACP-capable
    coding agent as a child process, act as its client, receive permission and elicitation requests,
    and return the human response over the same JSON-RPC session. This bridge is not implemented.
 
-Do not rebuild AgentNotify on Agent Communication Protocol/A2A, either project named Agent Event
-Protocol, or MCP. Those standards solve useful adjacent problems, but none replaces AgentNotify's
+Do not rebuild Nokoo on Agent Communication Protocol/A2A, either project named Agent Event
+Protocol, or MCP. Those standards solve useful adjacent problems, but none replaces Nokoo's
 durable human-attention lifecycle, local history, relay routing, and mobile response security.
 
 The practical topology is:
@@ -47,7 +47,7 @@ existing terminal/editor session                 future managed session
         |                                                    |
 native hook / plugin / SDK                       Agent Client Protocol bridge
         |                                                    |
-        +--------------- AgentNotify host adapter -----------+
+        +--------------- Nokoo host adapter -----------+
                                   |
                     local broker + SQLite source of truth
                          /                         \
@@ -68,7 +68,7 @@ The language model itself does not need to subscribe to a message bus.
 
 ## Why a skill or ordinary tool is insufficient
 
-A skill can teach a model to call `agentnotify` before it waits, but a skill is prompt context. It
+A skill can teach a model to call `nokoo` before it waits, but a skill is prompt context. It
 cannot observe a host-native permission dialog, keep a blocked runtime call open, or inject a
 decision into that dialog.
 
@@ -83,13 +83,13 @@ A real integration therefore needs one of these host-owned control surfaces:
 - a plugin/extension API that can list and resolve pending requests;
 - a bidirectional SDK or gateway session;
 - an RPC protocol whose client answers UI requests; or
-- Agent Client Protocol, with AgentNotify acting as the client.
+- Agent Client Protocol, with Nokoo acting as the client.
 
 Skills and MCP remain useful installation and fallback surfaces. They are not the control plane.
 
 ## The protocol layers
 
-AgentNotify keeps three different concerns separate.
+Nokoo keeps three different concerns separate.
 
 | Layer | Responsibility | Current state |
 | --- | --- | --- |
@@ -98,7 +98,7 @@ AgentNotify keeps three different concerns separate.
 | Remote transport | Deliver requests/responses, reconnect, backfill, and acknowledge transport | Relay/mobile round trip shipped; response sealing to the installation planned |
 
 The relay transport should not contain Codex-, Claude-, or Cursor-specific payloads. The WPF app
-should not embed every vendor SDK. Adapters translate at the edge into one bounded AgentNotify
+should not embed every vendor SDK. Adapters translate at the edge into one bounded Nokoo
 interaction model.
 
 ## Interaction model and extensions
@@ -110,7 +110,7 @@ The table below also includes extension ideas, which are not part of the current
 
 | Field | Purpose |
 | --- | --- |
-| `id` | AgentNotify-assigned stable interaction identity |
+| `id` | Nokoo-assigned stable interaction identity |
 | `request_event_id` | Future immutable producer event/correlation identity |
 | `session_id` | Native session identity |
 | `turn_id` | Native turn/generation identity when available |
@@ -133,7 +133,7 @@ A mobile tap is not proof that the coding agent accepted the decision. The broke
 answer acceptance; an explicit native-host acceptance receipt remains future work:
 
 ```text
-submitted by human -> accepted by AgentNotify -> accepted by host
+submitted by human -> accepted by Nokoo -> accepted by host
                                       \-> rejected as stale/mismatched
 ```
 
@@ -209,7 +209,7 @@ rejection, timeout, and simultaneous local/mobile responses.
 
 ## Standards assessment
 
-### ARC — keep as AgentNotify's semantic contract
+### ARC — keep as Nokoo's semantic contract
 
 ARC 0.2 folded the broker's interaction model into the contract: an answerable request states the
 shape of the answer it waits for, and `response.submitted` carries one answer back, bound by digest
@@ -225,8 +225,8 @@ version 1 defines [`session/request_permission`](https://agentclientprotocol.com
 with stable option IDs and allow/reject semantics. Newer capability-negotiated work also covers
 elicitation.
 
-AgentNotify should implement an ACP **client**, not redefine ACP. The bridge can normalize ACP
-permission/elicitation calls into AgentNotify interactions and return the selected option on the
+Nokoo should implement an ACP **client**, not redefine ACP. The bridge can normalize ACP
+permission/elicitation calls into Nokoo interactions and return the selected option on the
 original JSON-RPC request.
 
 Important limitation: ACP normally gives the client ownership of a subprocess. It is not a generic
@@ -249,7 +249,7 @@ ARC, the host adapter, or the Relay response design.
 
 [MCP elicitation](https://modelcontextprotocol.io/specification/draft/client/elicitation) lets an MCP
 server request form or URL input while processing a client request, with accept/decline/cancel
-responses and a restricted JSON Schema form model. AgentNotify can expose or consume this after its
+responses and a restricted JSON Schema form model. Nokoo can expose or consume this after its
 interaction model stabilizes. It cannot intercept a coding host's unrelated shell/file approval.
 
 ### Agent Approve Agent Event Protocol — borrow the event vocabulary
@@ -259,9 +259,9 @@ coding-agent events and hook control responses. Its `action.requested`, `questio
 `question.answered`, stable action correlation, mapping files, and allow/deny/ask/defer vocabulary
 are directly useful design references.
 
-It is a public 0.1 review draft. The published format does not by itself provide AgentNotify's local
+It is a public 0.1 review draft. The published format does not by itself provide Nokoo's local
 storage model, Relay encryption, device identity, replay defense, or offline delivery boundary.
-Borrow concepts and consider an import/export adapter; do not make it AgentNotify's internal source
+Borrow concepts and consider an import/export adapter; do not make it Nokoo's internal source
 of truth.
 
 ### agenteventprotocol organization — promising but pre-release
@@ -271,7 +271,7 @@ attention, control, and replay across stdio/HTTP/SSE/WebSocket. Its reference st
 `attention.requested` to authenticated control response round trip, command acknowledgement,
 deduplication, `(epoch, seq)` replay, and adapters for several coding agents.
 
-This is the closest external prototype to the complete AgentNotify idea, but its own status is
+This is the closest external prototype to the complete Nokoo idea, but its own status is
 pre-release v0.1 with parts still draft. Study its conformance fixtures, replay model, control
 acknowledgements, and adapters. Avoid a core dependency until the standard and packages stabilize.
 
@@ -290,7 +290,7 @@ the coding agent.
 | OpenClaw | Excellent | Gateway approval watcher shipped | Treat canonical command/cwd/session plan as authoritative; backfill pending approvals |
 | Gemini CLI | High | Managed `gemini --acp` | Notification hook observes permission prompts but cannot answer them |
 | Muse Code | High, preview | Official SDK approval and user-input streams | Developer Preview, pre-1.0; pin schema/SDK and expect change |
-| Pi coding agent/harness | High | Extension + RPC extension-UI protocol | Pi intentionally has no universal built-in permission policy; AgentNotify extension supplies it |
+| Pi coding agent/harness | High | Extension + RPC extension-UI protocol | Pi intentionally has no universal built-in permission policy; Nokoo extension supplies it |
 | GitHub Copilot CLI | Excellent | Native hooks for existing sessions; SDK/ACP for managed sessions | ACP is public preview; cloud sessions may treat ask as deny/no-user |
 | Cursor | High | Managed CLI ACP; native hooks for allow/deny policy | Native `preToolUse` accepts `ask` in schema but does not enforce it today |
 | Roo Code | Low / legacy | Source fork only | The official extension was shut down; do not make it a primary target |
@@ -298,7 +298,7 @@ the coding agent.
 ### Codex
 
 Official [Codex hooks](https://developers.openai.com/codex/hooks) include synchronous
-`PermissionRequest` and lifecycle events. A direct AgentNotify hook can forward a request, block
+`PermissionRequest` and lifecycle events. A direct Nokoo hook can forward a request, block
 within the host timeout, and return the native allow/deny/abstain decision. Async hooks are suitable
 for notifications, not for approving the already-waiting call.
 
@@ -332,7 +332,7 @@ answers. This is a strong direct adapter surface, and an ACP server can provide 
 when supported by the installed release.
 
 Pending/reconnect behavior is especially important: a plugin event alone is not durable. On startup
-or reconnect, list pending requests and reconcile them with AgentNotify SQLite before accepting an
+or reconnect, list pending requests and reconcile them with Nokoo SQLite before accepting an
 answer.
 
 ### Kilo Code
@@ -345,7 +345,7 @@ direct and managed modes with a largely shared adapter implementation.
 ### Hermes
 
 [Hermes approval transports](https://hermes-agent.nousresearch.com/docs/user-guide/features/plugins#approval-transports)
-are almost exactly the AgentNotify adapter abstraction. A plugin registers a presentation transport
+are almost exactly the Nokoo adapter abstraction. A plugin registers a presentation transport
 for an existing approval; Hermes supplies an immutable redacted request, host timeout, allowed
 choices, and opaque request ID/digest. Stale, changed, unbound, or unsupported-scope responses are
 rejected, and transport failure denies unless the user explicitly selects built-in fallback.
@@ -361,7 +361,7 @@ already use a gateway event/control loop: `exec.approval.requested`, list/backfi
 [Gateway client](https://docs.openclaw.ai/gateway/clients) with `operator.approvals` can display and
 resolve pending approvals and reconcile live events with the pending list by approval ID.
 
-AgentNotify should be a Gateway operator client and preserve OpenClaw's canonical command, cwd,
+Nokoo should be a Gateway operator client and preserve OpenClaw's canonical command, cwd,
 session, and execution plan rather than reconstructing them from display text.
 
 ### Gemini CLI
@@ -392,7 +392,7 @@ before execution and can block; `ctx.ui` provides confirmation, selection, and i
 [RPC mode](https://pi.dev/docs/latest/rpc), those dialogs become blocking
 `extension_ui_request`/`extension_ui_response` messages with matching IDs.
 
-Build a small AgentNotify extension and run Pi in RPC mode for the managed path. Do not describe it
+Build a small Nokoo extension and run Pi in RPC mode for the managed path. Do not describe it
 as a built-in Pi-wide permission system.
 
 ### GitHub Copilot CLI
@@ -441,7 +441,7 @@ policy; WPF owns Windows presentation only.
 
 - Whether response events become ARC 0.2 core events or a separately versioned ARC interaction
   profile.
-- Whether the bridge is distributed inside AgentNotify archives or as a separate npm/package
+- Whether the bridge is distributed inside Nokoo archives or as a separate npm/package
   artifact with a small launcher.
 - Whether the shipped authenticated loopback HTTP/wait path needs a second local adapter transport
   for managed sessions. The semantic and persistence model should not depend on that choice.
@@ -455,13 +455,11 @@ policy; WPF owns Windows presentation only.
 The owner reports that the Relay and Android mobile builds were tested successfully end to end on
 2026-09-03. This documentation branch did not repeat that device test.
 
-- `agent-notify` — this project — is MIT-licensed and open source.
-- AgentNotify Relay and its mobile client are **not** open source. They are closed-source components
-  operated as a hosted service, and carry no permission to use, copy, modify, or distribute their
-  source.
+- Nokoo — this project — Nokoo Relay, and its mobile client are **not** open source. They are
+  proprietary; the relay and mobile client are operated as a hosted service. None carries permission
+  to use, copy, modify, or distribute its source.
 
-Copies of this project already distributed under MIT retain the rights the MIT licence grants; the
-Relay's licensing is separate and does not affect them. This is a project record, not legal advice.
+This is a project record, not legal advice.
 
 ## Primary research sources
 

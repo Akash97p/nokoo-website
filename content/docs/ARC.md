@@ -7,9 +7,9 @@ attention. It standardizes how a producer creates, updates, and resolves a bound
 — and, when the producer is waiting on a person, how the human answer comes back — without defining
 how any of that is transported, stored, routed, or displayed.
 
-AgentNotify defines ARC and is its first reference implementation. The specification is independent
-of the AgentNotify product model: producers do not need to know about desktop toasts, SQLite,
-delivery providers, or the AgentNotify CLI.
+Nokoo defines ARC and is its first reference implementation. The specification is independent
+of the Nokoo product model: producers do not need to know about desktop toasts, SQLite,
+delivery providers, or the Nokoo CLI.
 
 ## Goals
 
@@ -35,8 +35,8 @@ being asked* or to carry back *what the person said*. Both now exist:
 
 0.2 replaces 0.1 rather than extending it. A consumer that implements 0.2 rejects `"0.1"`, as the
 versioning rule below requires. The superseded
-[`arc-0.1.schema.json`](../src/AgentNotify.Protocol/Schemas/arc-0.1.schema.json) stays published so
-its URL keeps resolving; it is no longer normative and AgentNotify no longer accepts it.
+[`arc-0.1.schema.json`](../src/Nokoo.Protocol/Schemas/arc-0.1.schema.json) stays published so
+its URL keeps resolving; it is no longer normative and Nokoo no longer accepts it.
 
 ## Non-goals in 0.2
 
@@ -129,9 +129,9 @@ action solely because a producer supplied a project, process ID, or working dire
 | `response` | no | Answer specification; its presence makes the request answerable |
 | `outcome` | resolution only | Why the condition closed |
 
-Request kinds and AgentNotify defaults are:
+Request kinds and Nokoo defaults are:
 
-| ARC kind | Meaning | AgentNotify type | Default priority |
+| ARC kind | Meaning | Nokoo type | Default priority |
 | --- | --- | --- | --- |
 | `information` | Useful state that deserves visibility | `info` | normal |
 | `question` | The agent needs an answer | `input_required` | high |
@@ -238,8 +238,8 @@ consent or refusal.
   "context": {
     "session_id": "session-42",
     "correlation_id": "turn-19",
-    "project": "agent-notify",
-    "cwd": "/work/agent-notify"
+    "project": "nokoo",
+    "cwd": "/work/nokoo"
   },
   "request": {
     "key": "release-approval",
@@ -285,7 +285,7 @@ consent or refusal.
   "event_id": "evt_permission_answer_0192",
   "event_type": "response.submitted",
   "occurred_at": "2026-08-26T01:19:00Z",
-  "sender": { "id": "agentnotify", "name": "AgentNotify" },
+  "sender": { "id": "nokoo", "name": "Nokoo" },
   "request": { "key": "release-approval" },
   "response": {
     "response_id": "resp_7c1e",
@@ -310,13 +310,13 @@ consent or refusal.
 }
 ```
 
-## AgentNotify HTTP binding
+## Nokoo HTTP binding
 
-AgentNotify accepts ARC at its existing local event endpoint:
+Nokoo accepts ARC at its existing local event endpoint:
 
 ```text
 POST http://127.0.0.1:47821/v1/events
-Authorization: Bearer <local AgentNotify token>
+Authorization: Bearer <local Nokoo token>
 Content-Type: application/json
 ```
 
@@ -348,26 +348,26 @@ rejected question cannot leave a visible notification behind with nothing waitin
 
 See [Interactions](INTERACTIONS.md) for the interaction model, its own loopback routes, and the CLI.
 
-The HTTP binding is an AgentNotify implementation choice, not part of the ARC base contract. Other
+The HTTP binding is a Nokoo implementation choice, not part of the ARC base contract. Other
 consumers may receive the same event through newline-delimited stdout, a local socket, a queue, or a
 different authenticated HTTP endpoint.
 
-## AgentNotify extension
+## Nokoo extension
 
-AgentNotify recognizes one optional presentation hint:
+Nokoo recognizes one optional presentation hint:
 
 ```json
 {
   "extensions": {
-    "x-agentnotify": {
+    "x-nokoo": {
       "notification_type": "custom_type_id"
     }
   }
 }
 ```
 
-`notification_type` selects a configured AgentNotify type ID. Unknown fields inside
-`x-agentnotify` are rejected. Other valid `x-<vendor>` extensions are ignored and are not copied
+`notification_type` selects a configured Nokoo type ID. Unknown fields inside
+`x-nokoo` are rejected. Other valid `x-<vendor>` extensions are ignored and are not copied
 wholesale into notification metadata.
 
 ## Idempotency and ordering
@@ -398,18 +398,18 @@ wholesale into notification metadata.
 - Never log or forward a nonce beyond the request envelope that carried it, and keep prompts,
   choices, answers, and digests out of logs.
 
-AgentNotify never extends its local bearer token to an internet-facing API. Optional off-device
+Nokoo never extends its local bearer token to an internet-facing API. Optional off-device
 routes apply their configured content policy only after the request is stored locally.
 
 ## Schema and implementation
 
 The normative machine-readable schema is
-[`src/AgentNotify.Protocol/Schemas/arc-0.2.schema.json`](../src/AgentNotify.Protocol/Schemas/arc-0.2.schema.json).
-GitHub Pages publishes the same file at
-[`schemas/arc-0.2.schema.json`](https://akash97p.github.io/agent-notify/schemas/arc-0.2.schema.json).
+[`src/Nokoo.Protocol/Schemas/arc-0.2.schema.json`](../src/Nokoo.Protocol/Schemas/arc-0.2.schema.json).
+The website publishes the same file at
+[`schemas/arc-0.2.schema.json`](https://nokoo.ai/schemas/arc-0.2.schema.json).
 
-`AgentNotify.Protocol` contains the portable ARC models, schema, native API DTOs, enums, and shared
-JSON rules. It has no WPF, ASP.NET, SQLite, or provider dependencies. Projection into AgentNotify's
+`Nokoo.Protocol` contains the portable ARC models, schema, native API DTOs, enums, and shared
+JSON rules. It has no WPF, ASP.NET, SQLite, or provider dependencies. Projection into Nokoo's
 local model remains in the API layer.
 
 ## Versioning and conformance
@@ -420,7 +420,7 @@ before 1.0. Consumers must reject unsupported versions instead of guessing their
 
 Use these implementation claims:
 
-> AgentNotify defines ARC 0.2 and implements its request creation, update, response, and resolution
+> Nokoo defines ARC 0.2 and implements its request creation, update, response, and resolution
 > lifecycle.
 
 > This producer emits ARC 0.2 events.

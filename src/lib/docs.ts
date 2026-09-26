@@ -20,18 +20,18 @@ export type DocDefinition = {
 };
 
 export const docs: DocDefinition[] = [
-  { source: "docs/INSTALL_WITH_AGENT.md", slug: "install-with-agent", title: "Install with an agent", section: "Getting started", description: "Let a terminal-capable coding agent install and verify AgentNotify." },
+  { source: "docs/INSTALL_WITH_AGENT.md", slug: "install-with-agent", title: "Install with an agent", section: "Getting started", description: "Let a terminal-capable coding agent install and verify Nokoo." },
   { source: "docs/INSTALLATION.md", slug: "installation", title: "Install on Windows", section: "Getting started", description: "Install the Windows desktop application and CLI." },
   { source: "docs/INSTALLATION_UNIX.md", slug: "installation-unix", title: "Install on macOS and Linux", section: "Getting started", description: "Run the portable broker and the native macOS quota menu bar." },
   { source: "docs/TROUBLESHOOTING.md", slug: "troubleshooting", title: "Troubleshooting", section: "Getting started", description: "Diagnose common installation, API, and delivery problems." },
-  { source: "docs/WEB_UI.md", slug: "web-ui", title: "Web interface", section: "Using AgentNotify", description: "Questions, settings, usage, live quota, and macOS menu-bar configuration." },
-  { source: "docs/CLI.md", slug: "cli", title: "Command line", section: "Using AgentNotify", description: "Commands, flags, output shapes, and exit codes." },
-  { source: "docs/API.md", slug: "api", title: "Local REST API", section: "Using AgentNotify", description: "Authenticated loopback endpoints and request contracts." },
-  { source: "docs/ARC.md", slug: "arc", title: "Attention Request Contract", section: "Using AgentNotify", description: "ARC 0.2 lifecycle, schemas, and reference binding." },
-  { source: "docs/ROUTER.md", slug: "router", title: "Provider router", section: "Using AgentNotify", description: "Opt-in model routing, translation, switching, failover, and security boundaries." },
-  { source: "docs/CONFIGURATION.md", slug: "configuration", title: "Configuration", section: "Using AgentNotify", description: "Configuration files, defaults, and notification types." },
-  { source: "docs/CHANNELS.md", slug: "channels", title: "Outbound channels", section: "Using AgentNotify", description: "Nineteen opt-in adapters and their security policies." },
-  { source: "docs/RELAY.md", slug: "relay", title: "AgentNotify Relay", section: "Using AgentNotify", description: "The hosted transport from your computers to your phone." },
+  { source: "docs/WEB_UI.md", slug: "web-ui", title: "Web interface", section: "Using Nokoo", description: "Questions, settings, usage, live quota, and macOS menu-bar configuration." },
+  { source: "docs/CLI.md", slug: "cli", title: "Command line", section: "Using Nokoo", description: "Commands, flags, output shapes, and exit codes." },
+  { source: "docs/API.md", slug: "api", title: "Local REST API", section: "Using Nokoo", description: "Authenticated loopback endpoints and request contracts." },
+  { source: "docs/ARC.md", slug: "arc", title: "Attention Request Contract", section: "Using Nokoo", description: "ARC 0.2 lifecycle, schemas, and reference binding." },
+  { source: "docs/ROUTER.md", slug: "router", title: "Provider router", section: "Using Nokoo", description: "Opt-in model routing, translation, switching, failover, and security boundaries." },
+  { source: "docs/CONFIGURATION.md", slug: "configuration", title: "Configuration", section: "Using Nokoo", description: "Configuration files, defaults, and notification types." },
+  { source: "docs/CHANNELS.md", slug: "channels", title: "Outbound channels", section: "Using Nokoo", description: "Nineteen opt-in adapters and their security policies." },
+  { source: "docs/RELAY.md", slug: "relay", title: "Nokoo Relay", section: "Using Nokoo", description: "The hosted transport from your computers to your phone." },
   { source: "docs/AGENT_INTEGRATION.md", slug: "agent-integration", title: "Agent integration", section: "Agents", description: "When and how an agent should request attention." },
   { source: "docs/AGENT_SKILLS.md", slug: "agent-skills", title: "Agent skills", section: "Agents", description: "Install the bundled skill into Codex or Claude Code." },
   { source: "docs/HARNESS.md", slug: "harness", title: "Agent harnesses", section: "Agents", description: "Auto-notify harnesses for eleven coding hosts." },
@@ -62,13 +62,13 @@ function rewriteLinks(sourcePath: string) {
       if (node.tagName !== "a" || typeof node.properties?.href !== "string") return;
       let href = node.properties.href;
       // The source repository is private: its links would 404, so they keep their text only.
-      if (/^https?:\/\/(www\.)?github\.com\/Akash97p\/agent-notify(\/|$)/i.test(href)) {
+      if (/^https?:\/\/(www\.)?github\.com\/Akash97p\/agent-notify(-[a-z-]+)?(\/|$)/i.test(href)) {
         node.tagName = "span";
         node.properties = {};
         return;
       }
-      // Links to the old GitHub Pages site resolve to the same page on this one.
-      const pages = href.match(/^https?:\/\/akash97p\.github\.io\/agent-notify(\/.*)?$/i);
+      // Absolute links to this site resolve to the same page under the current base path.
+      const pages = href.match(/^https?:\/\/(?:www\.)?nokoo\.ai(\/.*)?$/i);
       if (pages) {
         href = `${basePath}${(pages[1] ?? "/").replace(/^\/docs\/([^/#]+)\.html/, "/docs/$1/")}`;
         node.properties.href = href;

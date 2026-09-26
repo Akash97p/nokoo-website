@@ -25,7 +25,7 @@ const groups = [
   {
     name: "Your own phone",
     blurb: "The path built for this job, rather than someone else's product with notifications bolted on.",
-    items: ["AgentNotify Relay"],
+    items: ["Nokoo Relay"],
     accent: "border-amber-300/40",
   },
   {
@@ -71,7 +71,7 @@ export default function ChannelsPage() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg"><Link href="/docs/channels/">Read the channel guide <ArrowRight /></Link></Button>
-              <Button asChild size="lg" variant="outline"><Link href="/relay/">About AgentNotify Relay</Link></Button>
+              <Button asChild size="lg" variant="outline"><Link href="/relay/">About Nokoo Relay</Link></Button>
             </div>
           </Reveal>
         </div>

@@ -30,8 +30,8 @@ the phone card without a live host).
 Answers come back the other way: mobile POSTs to the Relay server, and the
 desktop pulls them. While the broker runs, a background poller checks every
 enabled Relay profile every few seconds with bounded backoff (Windows tray and
-headless `agentnotifyd` both host it); answers normally reach a waiting host
-without anyone running anything. `agentnotify interactions poll-responses
+headless `nokood` both host it); answers normally reach a waiting host
+without anyone running anything. `nokoo interactions poll-responses
 [--provider ID] [--json]` remains for diagnostics and one-off polls.
 
 Every fetched answer is revalidated by the broker (digest, nonce, kind,
@@ -49,7 +49,7 @@ A host adapter turns a live permission/question into an interaction and the
 accepted answer back into the host's native decision:
 
 1. The synchronous hook fires (Codex/Claude `PermissionRequest`) and blocks.
-2. The bundled hook bridge (`agentnotify_hook.py <agent> ask-permission`)
+2. The bundled hook bridge (`nokoo_hook.py <agent> ask-permission`)
    opens one interaction (keyed per project/session), sends the visible
    notification, and waits on the broker.
 3. The human answers from the local WebUI, `interactions respond`, or the phone via Relay.
@@ -122,20 +122,20 @@ returns the number published; it returns `400` when Relay publishing is unavaila
 ## CLI
 
 ```bash
-agentnotify interactions request --kind permission --prompt "Deploy to prod?" \
+nokoo interactions request --kind permission --prompt "Deploy to prod?" \
   --choice allow-once:"Allow once" --choice deny:"Deny" \
   --agent codex --project shop --session sess-1
 
-agentnotify interactions list --pending
-agentnotify interactions get <id>
-agentnotify interactions wait <id> --timeout 120
-agentnotify interactions respond <id> --response-id r1 --digest <digest> --nonce <nonce> --choice deny
-agentnotify interactions cancel <id>
+nokoo interactions list --pending
+nokoo interactions get <id>
+nokoo interactions wait <id> --timeout 120
+nokoo interactions respond <id> --response-id r1 --digest <digest> --nonce <nonce> --choice deny
+nokoo interactions cancel <id>
 ```
 
 `--choice` is repeatable as `ID:LABEL`; add `--choice-detail ID:DETAIL` for
 scope/command previews. `respond` needs the digest and nonce from `get` and exactly one
-of `--choice` / `--text`. See `agentnotify help interactions`.
+of `--choice` / `--text`. See `nokoo help interactions`.
 
 ## Storage and lifecycle
 

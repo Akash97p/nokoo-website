@@ -1,6 +1,6 @@
 # Outbound channels
 
-Outbound delivery is secondary to AgentNotify's local SQLite notification record. A channel failure never removes or changes the local notification. Every provider and route is disabled until a user explicitly enables it.
+Outbound delivery is secondary to Nokoo's local SQLite notification record. A channel failure never removes or changes the local notification. Every provider and route is disabled until a user explicitly enables it.
 
 Use **Tray icon → Settings → Channels** to create a provider profile, enter encrypted values, send a test, and add a route. New profiles and routes begin disabled. Password fields never reveal stored values: leave one blank to preserve it, enter a value to replace it, or select the explicit removal checkbox for an optional credential. Route message content is excluded by default and requires explicit opt-in.
 
@@ -30,18 +30,18 @@ Non-secret profile configuration:
   "urlSecretName": "endpoint_url",
   "allowPrivateNetwork": false,
   "headers": {
-    "X-Source": "agentnotify"
+    "X-Source": "nokoo"
   },
   "secretHeaders": {
     "Authorization": "authorization"
   },
   "signature": {
     "secretName": "hmac_secret",
-    "headerName": "X-AgentNotify-Signature",
-    "timestampHeaderName": "X-AgentNotify-Timestamp"
+    "headerName": "X-Nokoo-Signature",
+    "timestampHeaderName": "X-Nokoo-Timestamp"
   },
   "bodyTemplate": {
-    "event": "agentnotify.notification",
+    "event": "nokoo.notification",
     "deliveryId": "{{outbox_id}}",
     "notificationId": "{{notification_id}}",
     "notification": "{{payload}}"
@@ -82,10 +82,10 @@ The `smtp` adapter sends a bounded plain-text email to one to ten explicitly con
   "port": 587,
   "security": "start_tls",
   "allowPrivateNetwork": false,
-  "fromAddress": "agentnotify@example.com",
-  "fromName": "AgentNotify",
+  "fromAddress": "nokoo@example.com",
+  "fromName": "Nokoo",
   "recipients": ["owner@example.com"],
-  "subjectPrefix": "[AgentNotify] ",
+  "subjectPrefix": "[Nokoo] ",
   "usernameSecretName": "username",
   "passwordSecretName": "password"
 }
@@ -97,13 +97,13 @@ DNS is resolved before connecting and every address must pass the same public/pr
 
 Each delivery uses a stable Message-ID derived from the outbox ID. SMTP 4xx failures retry; 5xx, authentication, invalid configuration, and TLS-policy failures dead-letter. Network/protocol interruptions retry within the dispatcher's timeout and six-attempt ceiling. Message bodies honor the route's **Include notification message off-device** setting.
 
-AgentNotify uses [MailKit 4.17.0](https://www.nuget.org/packages/MailKit/4.17.0) and its strict `StartTls`/`SslOnConnect` modes. Redistribution notices are in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
+Nokoo uses [MailKit 4.17.0](https://www.nuget.org/packages/MailKit/4.17.0) and its strict `StartTls`/`SslOnConnect` modes. Redistribution notices are in [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
 
 ## Telegram Bot
 
 Implementation status: adapter and native Settings fields complete; real-bot and human UI smoke pending.
 
-Create a bot through Telegram's `@BotFather`, start a private conversation with it or grant it permission in the destination group/channel, and obtain the numeric chat ID or `@channelusername`. AgentNotify stores both the bot token and destination chat as DPAPI current-user encrypted secrets. A forum topic/thread ID is optional.
+Create a bot through Telegram's `@BotFather`, start a private conversation with it or grant it permission in the destination group/channel, and obtain the numeric chat ID or `@channelusername`. Nokoo stores both the bot token and destination chat as DPAPI current-user encrypted secrets. A forum topic/thread ID is optional.
 
 ```json
 {
@@ -115,7 +115,7 @@ Create a bot through Telegram's `@BotFather`, start a private conversation with 
 }
 ```
 
-The `telegram` adapter calls only the official `https://api.telegram.org/bot<token>/sendMessage` endpoint. It disables redirects, cookies, ambient proxies, automatic decompression, and link previews; verifies that every DNS result is public immediately before connecting; and bounds a success response to 64 KiB. The bot token is required in Telegram's API URL but is never written to AgentNotify logs, SQLite configuration, notification metadata, or the JSON body.
+The `telegram` adapter calls only the official `https://api.telegram.org/bot<token>/sendMessage` endpoint. It disables redirects, cookies, ambient proxies, automatic decompression, and link previews; verifies that every DNS result is public immediately before connecting; and bounds a success response to 64 KiB. The bot token is required in Telegram's API URL but is never written to Nokoo logs, SQLite configuration, notification metadata, or the JSON body.
 
 Messages are sent as plain text without `parse_mode`, so notification content cannot inject Telegram markup. Text is safely truncated to Telegram's 4096-character limit without splitting a UTF-16 surrogate pair. The route's **Include notification message off-device** control is honored. Content protection defaults on; silent delivery is optional.
 
@@ -125,12 +125,12 @@ HTTP 408, 425, 429, 5xx, network failures, and malformed success responses retry
 
 Implementation status: adapter and native Settings fields complete; real-webhook and human UI smoke pending.
 
-Create an incoming webhook in the destination Discord channel and paste its complete URL into Settings. The URL contains its authentication token, so AgentNotify stores the entire value only as a DPAPI current-user encrypted secret. An optional numeric thread ID routes messages into an existing thread.
+Create an incoming webhook in the destination Discord channel and paste its complete URL into Settings. The URL contains its authentication token, so Nokoo stores the entire value only as a DPAPI current-user encrypted secret. An optional numeric thread ID routes messages into an existing thread.
 
 ```json
 {
   "webhookUrlSecretName": "webhook_url",
-  "username": "AgentNotify",
+  "username": "Nokoo",
   "threadId": "123456789012345678"
 }
 ```
@@ -145,7 +145,7 @@ HTTP 408, 425, 429, 5xx, and network failures retry; redirects and other 4xx res
 
 Implementation status: adapter and native Settings fields complete; real-webhook and human UI smoke pending.
 
-Create an incoming webhook for the target Slack conversation and paste its complete URL into Settings. The URL is a credential tied to that workspace and channel, so AgentNotify stores it only as a DPAPI current-user encrypted secret. An optional `thread_ts` value sends the notification as a reply to an existing parent message.
+Create an incoming webhook for the target Slack conversation and paste its complete URL into Settings. The URL is a credential tied to that workspace and channel, so Nokoo stores it only as a DPAPI current-user encrypted secret. An optional `thread_ts` value sends the notification as a reply to an existing parent message.
 
 ```json
 {
@@ -164,7 +164,7 @@ HTTP 408, 425, 429, 5xx, network failures, and malformed success responses retry
 
 Implementation status: adapter and native Settings fields complete for current global-cloud workflow URLs; real-workflow, sovereign-cloud, and human UI smoke pending.
 
-In Teams, create a Workflows template that receives a webhook and posts to a channel or chat, then copy the current trigger URL into Settings. The signed URL is a credential and may exceed 255 characters, so AgentNotify stores the complete value only as a DPAPI current-user encrypted secret and accepts up to 8192 characters.
+In Teams, create a Workflows template that receives a webhook and posts to a channel or chat, then copy the current trigger URL into Settings. The signed URL is a credential and may exceed 255 characters, so Nokoo stores the complete value only as a DPAPI current-user encrypted secret and accepts up to 8192 characters.
 
 ```json
 {
@@ -182,7 +182,7 @@ Any 2xx response succeeds, including asynchronous `202 Accepted`. HTTP 408, 425,
 
 Implementation status: adapter and native Settings fields complete across all documented Cliq data centers; real-webhook and human UI smoke pending.
 
-Generate a Webhook Token in **Bots & Tools**, choose a channel or bot message endpoint, and paste the complete generated URL into Settings. The `zapikey` query value authenticates the request, so AgentNotify stores the entire URL only as a DPAPI current-user encrypted secret.
+Generate a Webhook Token in **Bots & Tools**, choose a channel or bot message endpoint, and paste the complete generated URL into Settings. The `zapikey` query value authenticates the request, so Nokoo stores the entire URL only as a DPAPI current-user encrypted secret.
 
 ```json
 {
@@ -200,7 +200,7 @@ HTTP 408, 425, 429, 5xx, and network failures retry; redirects and other 4xx res
 
 Implementation status: adapter and native Settings fields complete; real-webhook and human UI smoke pending.
 
-In the target Google Chat space, open **Apps & integrations**, add an incoming webhook, and paste the complete copied URL into Settings. Its `key` and `token` query values authenticate access to that space, so AgentNotify stores the entire URL only as a DPAPI current-user encrypted secret.
+In the target Google Chat space, open **Apps & integrations**, add an incoming webhook, and paste the complete copied URL into Settings. Its `key` and `token` query values authenticate access to that space, so Nokoo stores the entire URL only as a DPAPI current-user encrypted secret.
 
 ```json
 {
@@ -210,19 +210,19 @@ In the target Google Chat space, open **Apps & integrations**, add an incoming w
 }
 ```
 
-`threadKey` is optional. When set, `fallback` replies to the matching thread or starts it if it does not exist; `fail` posts only when the thread can be resolved. AgentNotify places the thread key in `thread.threadKey` and adds Google's documented `messageReplyOption`, rather than using the deprecated query-level `threadKey` parameter.
+`threadKey` is optional. When set, `fallback` replies to the matching thread or starts it if it does not exist; `fail` posts only when the thread can be resolved. Nokoo places the thread key in `thread.threadKey` and adds Google's documented `messageReplyOption`, rather than using the deprecated query-level `threadKey` parameter.
 
 The `google_chat` adapter accepts only HTTPS URLs on `chat.googleapis.com` with the exact `/v1/spaces/{space}/messages` path and exactly one `key` and one `token`. Custom ports, URI credentials, fragments, unknown/duplicate parameters, encoded path separators, and malformed space identifiers are rejected before a request is sent.
 
 Messages are route-redacted plain text. Chat formatting controls are escaped, and ASCII angle brackets are neutralized so notification content cannot inject `<users/all>`, user mentions, custom links, or other Chat control sequences. The complete serialized JSON body is kept at or below 31,500 UTF-8 bytes, leaving margin beneath Google's documented 32,000-byte message limit. Redirects, cookies, proxies, decompression, private/mixed DNS results, and response-body reads are disabled.
 
-AgentNotify spaces requests at least one second apart before sending. HTTP 408, 425, 429, 5xx, and network failures retry through the durable dispatcher; redirects and other 4xx responses are permanent. Google documents the URL secret, payload, threading, error handling, and one-write-per-second shared space quota in [Build a Google Chat app as a webhook](https://developers.google.com/workspace/chat/quickstart/webhooks), the size limit in [`spaces.messages.create`](https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages/create), and mention syntax in [Format messages](https://developers.google.com/workspace/chat/format-messages).
+Nokoo spaces requests at least one second apart before sending. HTTP 408, 425, 429, 5xx, and network failures retry through the durable dispatcher; redirects and other 4xx responses are permanent. Google documents the URL secret, payload, threading, error handling, and one-write-per-second shared space quota in [Build a Google Chat app as a webhook](https://developers.google.com/workspace/chat/quickstart/webhooks), the size limit in [`spaces.messages.create`](https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages/create), and mention syntax in [Format messages](https://developers.google.com/workspace/chat/format-messages).
 
 ## Mattermost
 
 Implementation status: adapter and native Settings fields complete; real-server and human UI smoke pending.
 
-Create an Incoming Webhook in the target Mattermost installation and paste its complete generated URL into Settings. The URL grants permission to post as its webhook integration, so AgentNotify stores it only as a DPAPI current-user encrypted secret.
+Create an Incoming Webhook in the target Mattermost installation and paste its complete generated URL into Settings. The URL grants permission to post as its webhook integration, so Nokoo stores it only as a DPAPI current-user encrypted secret.
 
 ```json
 {
@@ -234,9 +234,9 @@ Create an Incoming Webhook in the target Mattermost installation and paste its c
 
 The `mattermost` adapter requires HTTPS and a path ending in `/hooks/{token}`. It supports deployments under a URL subpath and custom HTTPS ports. URI credentials, query strings, fragments, encoded path separators, malformed tokens, and non-HTTPS endpoints are rejected. Public destinations are allowed by default; a LAN, loopback, carrier-grade NAT, or IPv6 unique-local server requires the explicit **Allow private/loopback destinations** setting. Link-local/cloud-metadata, multicast, unspecified, benchmarking, and documentation ranges are always blocked.
 
-The operating system's normal TLS hostname and certificate-chain validation is always active, including for private servers. AgentNotify does not offer an “accept invalid/self-signed certificate” switch; administrators should install their private CA correctly. Redirects, cookies, ambient proxies, and decompression are disabled, and every DNS result is checked immediately before connection to prevent public/private rebinding.
+The operating system's normal TLS hostname and certificate-chain validation is always active, including for private servers. Nokoo does not offer an “accept invalid/self-signed certificate” switch; administrators should install their private CA correctly. Redirects, cookies, ambient proxies, and decompression are disabled, and every DNS result is checked immediately before connection to prevent public/private rebinding.
 
-Messages use the webhook's configured destination and identity—AgentNotify does not override the channel, username, icon, or arbitrary props. Text is route-redacted, Markdown-escaped, and limited to Mattermost's documented 16,383 characters without splitting surrogate pairs. `@` and angle-bracket controls are neutralized to prevent `@channel`, `@here`, user, and Slack-compatible mentions from notification content. Optional silent mode asks Mattermost to suppress desktop, push, email, unread, mention-count, and new-message signals.
+Messages use the webhook's configured destination and identity—Nokoo does not override the channel, username, icon, or arbitrary props. Text is route-redacted, Markdown-escaped, and limited to Mattermost's documented 16,383 characters without splitting surrogate pairs. `@` and angle-bracket controls are neutralized to prevent `@channel`, `@here`, user, and Slack-compatible mentions from notification content. Optional silent mode asks Mattermost to suppress desktop, push, email, unread, mention-count, and new-message signals.
 
 A 2xx response succeeds only when it is `204 No Content` or contains Mattermost's bounded plain-text `ok` acknowledgement. HTTP 408, 425, 429, 5xx, network failures, and malformed success acknowledgements retry; redirects and other 4xx responses are permanent. See Mattermost's official [Incoming webhooks](https://developers.mattermost.com/integrate/webhooks/incoming/) documentation for setup, payload fields, acknowledgement, mention behavior, silent mode, and post limits.
 
@@ -259,13 +259,13 @@ The `matrix` adapter uses `PUT /_matrix/client/v3/rooms/{roomId}/send/m.room.mes
 
 Homeserver subpaths and custom HTTPS ports are supported. URI credentials, queries, fragments, unsafe base paths, unconsented private addresses, and all link-local/cloud-metadata or non-unicast ranges are rejected. Platform TLS certificate validation remains mandatory. Serialized JSON is bounded to 48 KiB, leaving space beneath Matrix's 65,536-byte complete-event limit. A successful response must contain a bounded `$`-prefixed event ID.
 
-End-to-end encrypted rooms are intentionally unsupported: AgentNotify does not possess or manage Matrix device/session keys, so a plaintext event sent to an encrypted room would not provide correct secure delivery. HTTP 408, 425, 429, 5xx, network failures, and malformed success acknowledgements retry; redirects and other 4xx responses are permanent. See the Matrix v1.19 Client-Server specification for [sending room events](https://spec.matrix.org/v1.19/client-server-api/#put_matrixclientv3roomsroomidsendeventtypetxnid), [access-token handling](https://spec.matrix.org/v1.19/client-server-api/#using-access-tokens), [mentions](https://spec.matrix.org/v1.19/client-server-api/#user-and-room-mentions), and [transaction identifiers](https://spec.matrix.org/v1.19/client-server-api/#transaction-identifiers).
+End-to-end encrypted rooms are intentionally unsupported: Nokoo does not possess or manage Matrix device/session keys, so a plaintext event sent to an encrypted room would not provide correct secure delivery. HTTP 408, 425, 429, 5xx, network failures, and malformed success acknowledgements retry; redirects and other 4xx responses are permanent. See the Matrix v1.19 Client-Server specification for [sending room events](https://spec.matrix.org/v1.19/client-server-api/#put_matrixclientv3roomsroomidsendeventtypetxnid), [access-token handling](https://spec.matrix.org/v1.19/client-server-api/#using-access-tokens), [mentions](https://spec.matrix.org/v1.19/client-server-api/#user-and-room-mentions), and [transaction identifiers](https://spec.matrix.org/v1.19/client-server-api/#transaction-identifiers).
 
 ## ntfy
 
 Implementation status: adapter and native Settings fields complete; real-server and human UI smoke pending.
 
-Enter an HTTPS ntfy server base URL, topic, and preferably a dedicated access token. The topic and token are DPAPI current-user encrypted. AgentNotify publishes the official JSON form to the server base URL with the topic in the body, so sensitive or high-entropy topic names do not appear in URLs, proxy access logs, or sanitized diagnostics.
+Enter an HTTPS ntfy server base URL, topic, and preferably a dedicated access token. The topic and token are DPAPI current-user encrypted. Nokoo publishes the official JSON form to the server base URL with the topic in the body, so sensitive or high-entropy topic names do not appear in URLs, proxy access logs, or sanitized diagnostics.
 
 ```json
 {
@@ -281,7 +281,7 @@ Current ntfy `tk_` access tokens are sent through the `Authorization: Bearer` he
 
 Self-hosted URL subpaths and custom HTTPS ports are supported. Private or loopback servers require separate private-network consent. HTTP, URI credentials, queries, fragments, unsafe base paths, link-local/cloud-metadata addresses, and any DNS result outside the selected policy are rejected. Certificate and hostname validation cannot be disabled.
 
-AgentNotify maps low/normal/high/critical to ntfy priorities 2/3/4/5, supplies conservative fixed emoji tags, disables Markdown, and includes a stable non-secret sequence ID so a retry updates the prior notification rather than duplicating it. The message is capped at 4096 UTF-8 bytes to avoid ntfy's documented conversion of longer messages into attachments. Route-level message redaction is honored.
+Nokoo maps low/normal/high/critical to ntfy priorities 2/3/4/5, supplies conservative fixed emoji tags, disables Markdown, and includes a stable non-secret sequence ID so a retry updates the prior notification rather than duplicating it. The message is capped at 4096 UTF-8 bytes to avoid ntfy's documented conversion of longer messages into attachments. Route-level message redaction is honored.
 
 A successful response must contain a bounded JSON message ID and, when present, the `message` event kind. HTTP 408, 425, 429, 5xx, network failures, and malformed success responses retry; redirects and other 4xx responses are permanent. See ntfy's official [publishing documentation](https://docs.ntfy.sh/publish/), [API limits](https://docs.ntfy.sh/publish/#limitations), and [access-control documentation](https://docs.ntfy.sh/config/#access-control).
 
@@ -289,7 +289,7 @@ A successful response must contain a bounded JSON message ID and, when present, 
 
 Implementation status: adapter and native Settings fields complete; real-server and human UI smoke pending.
 
-Create a dedicated application in Gotify and enter the server's HTTPS base URL and application token. Starting with Gotify 3, application tokens are shown only when created or rotated, so store the value when Gotify presents it. AgentNotify encrypts it with DPAPI and sends it only through the documented `X-Gotify-Key` header.
+Create a dedicated application in Gotify and enter the server's HTTPS base URL and application token. Starting with Gotify 3, application tokens are shown only when created or rotated, so store the value when Gotify presents it. Nokoo encrypts it with DPAPI and sends it only through the documented `X-Gotify-Key` header.
 
 ```json
 {
@@ -299,9 +299,9 @@ Create a dedicated application in Gotify and enter the server's HTTPS base URL a
 }
 ```
 
-The base URL can include a reverse-proxy subpath and custom HTTPS port, but must not include the terminal `/message`; AgentNotify appends it. HTTP endpoints, URI credentials, queries, fragments, unsafe paths, unconsented private addresses, and all link-local/cloud-metadata or non-unicast destinations are rejected. TLS certificate and hostname validation remains mandatory.
+The base URL can include a reverse-proxy subpath and custom HTTPS port, but must not include the terminal `/message`; Nokoo appends it. HTTP endpoints, URI credentials, queries, fragments, unsafe paths, unconsented private addresses, and all link-local/cloud-metadata or non-unicast destinations are rejected. TLS certificate and hostname validation remains mandatory.
 
-Title and route-redacted message text are bounded, and AgentNotify maps low/normal/high/critical priorities to 2/5/7/10. The payload explicitly sets Gotify's `client::display.contentType` to `text/plain`. It does not add Markdown, images, click URLs, Android intents, or action extras. This follows Gotify's warning that untrusted Markdown can cause information disclosure by loading remote images.
+Title and route-redacted message text are bounded, and Nokoo maps low/normal/high/critical priorities to 2/5/7/10. The payload explicitly sets Gotify's `client::display.contentType` to `text/plain`. It does not add Markdown, images, click URLs, Android intents, or action extras. This follows Gotify's warning that untrusted Markdown can cause information disclosure by loading remote images.
 
 A successful response must contain a positive bounded Gotify message ID. HTTP 408, 425, 429, 5xx, network failures, and malformed success responses retry; redirects and other 4xx responses are permanent. Gotify does not document an idempotency key, so an ambiguous timeout after server acceptance can produce a duplicate. See Gotify's official [Push messages](https://gotify.net/docs/pushmsg), [Message Extras](https://gotify.net/docs/msgextras), and [API documentation](https://gotify.net/api-docs).
 
@@ -309,7 +309,7 @@ A successful response must contain a positive bounded Gotify message ID. HTTP 40
 
 Implementation status: adapter and native Settings fields complete; real-account, receipt polling, and human UI smoke pending.
 
-Register a dedicated application in Pushover, then enter its 30-character application API token and the destination's 30-character user or delivery-group key. AgentNotify stores both values—and an optional single-device restriction—as DPAPI current-user encrypted secrets. Each installation should use an end-user-owned Pushover application token; AgentNotify does not embed or distribute a shared token.
+Register a dedicated application in Pushover, then enter its 30-character application API token and the destination's 30-character user or delivery-group key. Nokoo stores both values—and an optional single-device restriction—as DPAPI current-user encrypted secrets. Each installation should use an end-user-owned Pushover application token; Nokoo does not embed or distribute a shared token.
 
 ```json
 {
@@ -325,7 +325,7 @@ Register a dedicated application in Pushover, then enter its 30-character applic
 
 Messages are URL-encoded POST bodies sent only to `https://api.pushover.net/1/messages.json`; credentials never appear in the URL. Redirects, cookies, ambient proxies, and decompression are disabled, and every resolved address for the official host must be public. HTML, monospace formatting, supplementary URLs, callbacks, and attachments are deliberately omitted so agent-controlled content stays plain text and cannot create hidden links or remote loads.
 
-AgentNotify maps low/normal/high priorities to Pushover -1/0/1. Critical is high priority by default. If the user explicitly enables emergency behavior, critical maps to priority 2 and includes a locally validated retry interval of at least 30 seconds and expiry of at most 10,800 seconds. Emergency alerts repeat through Pushover until acknowledged or expired. AgentNotify requires the initial API response to contain a receipt but does not yet poll, cancel, or persist receipt state.
+Nokoo maps low/normal/high priorities to Pushover -1/0/1. Critical is high priority by default. If the user explicitly enables emergency behavior, critical maps to priority 2 and includes a locally validated retry interval of at least 30 seconds and expiry of at most 10,800 seconds. Emergency alerts repeat through Pushover until acknowledged or expired. Nokoo requires the initial API response to contain a receipt but does not yet poll, cancel, or persist receipt state.
 
 The optional sound may be a documented built-in sound or a custom sound name uploaded to the application owner's Pushover account. Blank preserves the user's account default. Title and route-redacted body are bounded to Pushover's 250- and 1,024-Unicode-character limits without splitting surrogate pairs.
 
@@ -335,7 +335,7 @@ A 2xx response succeeds only when bounded JSON contains `status: 1`, a request i
 
 Implementation status: note adapter and native Settings fields complete; real-account and human UI smoke pending.
 
-Create or copy a personal access token from Pushbullet Account Settings. The token grants full access to that account, so AgentNotify stores it only as a DPAPI current-user encrypted secret and sends it only through the documented `Access-Token` header. A profile can broadcast to all account devices or target one device ID, one owned channel tag, or one email address. Target values are also encrypted. Email is an explicit mode because Pushbullet may fall back to sending ordinary email when the address has no push-capable account/device.
+Create or copy a personal access token from Pushbullet Account Settings. The token grants full access to that account, so Nokoo stores it only as a DPAPI current-user encrypted secret and sends it only through the documented `Access-Token` header. A profile can broadcast to all account devices or target one device ID, one owned channel tag, or one email address. Target values are also encrypted. Email is an explicit mode because Pushbullet may fall back to sending ordinary email when the address has no push-capable account/device.
 
 ```json
 {
@@ -346,7 +346,7 @@ Create or copy a personal access token from Pushbullet Account Settings. The tok
 }
 ```
 
-AgentNotify sends JSON only to `https://api.pushbullet.com/v2/pushes`. It creates a plain `note` with a title and route-redacted body. It never uses link/file push types, uploads content, or accepts agent-provided remote URLs, source device IDs, or OAuth client targets. Requests and responses are bounded to 32 KiB; the title/body have smaller conservative UTF-8 bounds to keep escaped Unicode within that envelope.
+Nokoo sends JSON only to `https://api.pushbullet.com/v2/pushes`. It creates a plain `note` with a title and route-redacted body. It never uses link/file push types, uploads content, or accepts agent-provided remote URLs, source device IDs, or OAuth client targets. Requests and responses are bounded to 32 KiB; the title/body have smaller conservative UTF-8 bounds to keep escaped Unicode within that envelope.
 
 Every push includes a stable 32-character GUID derived from the durable outbox ID. Pushbullet describes same-GUID creates as “mostly idempotent,” so this reduces but does not eliminate duplicates after an ambiguous network failure. A successful response must be a bounded active `note` push with a non-empty Pushbullet identifier.
 
@@ -356,7 +356,7 @@ The user must acknowledge the documented free-account limit of 500 pushes per mo
 
 Implementation status: adapter and native Settings fields complete; real-account, durable daily budget, delivery-status polling, and human UI smoke pending.
 
-Twilio SMS is a paid, regulated transport. AgentNotify requires one Account SID, one credential, one recipient, one sender, and explicit paid-send consent. It recommends a revocable Standard or Restricted API Key SID/secret; Account SID/Auth Token authentication remains available but is labeled for local testing only, matching Twilio's credential guidance. All account, credential, phone, and sender values are DPAPI current-user encrypted.
+Twilio SMS is a paid, regulated transport. Nokoo requires one Account SID, one credential, one recipient, one sender, and explicit paid-send consent. It recommends a revocable Standard or Restricted API Key SID/secret; Account SID/Auth Token authentication remains available but is labeled for local testing only, matching Twilio's credential guidance. All account, credential, phone, and sender values are DPAPI current-user encrypted.
 
 ```json
 {
@@ -375,17 +375,17 @@ Twilio SMS is a paid, regulated transport. AgentNotify requires one Account SID,
 
 The recipient must be one E.164 phone number. The sender must be either one account-owned E.164 Twilio number or one `MG…` Messaging Service SID; WhatsApp/channel addresses, short codes, alphanumeric sender IDs, recipient lists, and agent-selected destinations are rejected. Use separate disabled-by-default profiles and routes for separate recipients. Trial accounts must separately verify the recipient in Twilio.
 
-AgentNotify composes a compact title/message SMS and enforces one billed segment: at most 160 GSM-7 septets (correctly counting extension characters twice) or 70 UCS-2 code units without splitting surrogate pairs. It sets `SmartEncoded=true`, a 300-second default queue validity, `ContentRetention=discard`, and `AddressRetention=obfuscate`. It sends no media, templates, callbacks, shortened links, scheduling, or risk-check override. The minimum priority defaults to critical; explicit test sends bypass that floor because the button is a deliberate action, but still require paid consent and can incur charges.
+Nokoo composes a compact title/message SMS and enforces one billed segment: at most 160 GSM-7 septets (correctly counting extension characters twice) or 70 UCS-2 code units without splitting surrogate pairs. It sets `SmartEncoded=true`, a 300-second default queue validity, `ContentRetention=discard`, and `AddressRetention=obfuscate`. It sends no media, templates, callbacks, shortened links, scheduling, or risk-check override. The minimum priority defaults to critical; explicit test sends bypass that floor because the button is a deliberate action, but still require paid consent and can incur charges.
 
-A successful create must return a valid message SID, an accepted/queued/sending/sent/delivered state, and zero or one initial segment. Failed/undelivered/canceled responses are permanent. Twilio does not document an idempotency key for Message creation, so AgentNotify applies a best-effort at-most-once policy to handled outcomes: 408, 425, 5xx, cancellation/timeouts, network failures, and malformed 2xx responses do not retry because the original SMS may already have been accepted and billed. Only a definite 429 rate limit retries. An app, OS, or power failure after provider acceptance but before local completion can still cause outbox recovery to replay and duplicate a billed SMS. This favors cost/duplicate safety over guaranteed off-device delivery; the local AgentNotify record remains authoritative.
+A successful create must return a valid message SID, an accepted/queued/sending/sent/delivered state, and zero or one initial segment. Failed/undelivered/canceled responses are permanent. Twilio does not document an idempotency key for Message creation, so Nokoo applies a best-effort at-most-once policy to handled outcomes: 408, 425, 5xx, cancellation/timeouts, network failures, and malformed 2xx responses do not retry because the original SMS may already have been accepted and billed. Only a definite 429 rate limit retries. An app, OS, or power failure after provider acceptance but before local completion can still cause outbox recovery to replay and duplicate a billed SMS. This favors cost/duplicate safety over guaranteed off-device delivery; the local Nokoo record remains authoritative.
 
-Before enabling a route, configure Twilio geographic permissions, sender registration/A2P compliance, consent and opt-out obligations, usage triggers, and an account spend limit. AgentNotify's one-segment and priority controls are not a durable daily monetary budget. See Twilio's official [Messages resource](https://www.twilio.com/docs/messaging/api/message-resource), [API authentication guidance](https://www.twilio.com/docs/usage/requests-to-twilio), and [SMS character limits](https://www.twilio.com/docs/glossary/what-sms-character-limit).
+Before enabling a route, configure Twilio geographic permissions, sender registration/A2P compliance, consent and opt-out obligations, usage triggers, and an account spend limit. Nokoo's one-segment and priority controls are not a durable daily monetary budget. See Twilio's official [Messages resource](https://www.twilio.com/docs/messaging/api/message-resource), [API authentication guidance](https://www.twilio.com/docs/usage/requests-to-twilio), and [SMS character limits](https://www.twilio.com/docs/glossary/what-sms-character-limit).
 
 ## WhatsApp Cloud API
 
 Implementation status: direct Meta adapter and native Settings fields complete; real-business-account testing, delivery-status webhooks, durable spend budgets, and human UI smoke pending.
 
-AgentNotify uses Meta's official hosted WhatsApp Cloud API, not browser automation, WhatsApp Web scraping, a personal account, or an unofficial bridge. It sends approved text templates only. A profile is restricted to one encrypted E.164 recipient and cannot be saved or delivered unless the operator separately confirms that the recipient opted in, the exact template/language/variable order is approved, and paid template sends are authorized.
+Nokoo uses Meta's official hosted WhatsApp Cloud API, not browser automation, WhatsApp Web scraping, a personal account, or an unofficial bridge. It sends approved text templates only. A profile is restricted to one encrypted E.164 recipient and cannot be saved or delivered unless the operator separately confirms that the recipient opted in, the exact template/language/variable order is approved, and paid template sends are authorized.
 
 ```json
 {
@@ -393,7 +393,7 @@ AgentNotify uses Meta's official hosted WhatsApp Cloud API, not browser automati
   "phoneNumberIdSecretName": "phone_number_id",
   "accessTokenSecretName": "access_token",
   "recipientSecretName": "recipient",
-  "templateName": "agentnotify_alert",
+  "templateName": "nokoo_alert",
   "languageCode": "en_US",
   "bodyParameters": ["title", "message"],
   "recipientOptInAcknowledged": true,
@@ -403,9 +403,9 @@ AgentNotify uses Meta's official hosted WhatsApp Cloud API, not browser automati
 }
 ```
 
-The Graph version defaults to `v25.0`, the current release when this adapter was implemented on 2026-08-12, but remains an explicit strictly validated setting because Meta versions expire independently of AgentNotify. The endpoint is always derived as `https://graph.facebook.com/{version}/{phone-number-id}/messages`; neither an agent nor a profile can select another host, port, path, or recipient at delivery time. The system-user access token must carry the permissions required by the operator's Meta setup. The token, phone-number ID, and recipient are stored only in DPAPI current-user secret envelopes.
+The Graph version defaults to `v25.0`, the current release when this adapter was implemented on 2026-08-12, but remains an explicit strictly validated setting because Meta versions expire independently of Nokoo. The endpoint is always derived as `https://graph.facebook.com/{version}/{phone-number-id}/messages`; neither an agent nor a profile can select another host, port, path, or recipient at delivery time. The system-user access token must carry the permissions required by the operator's Meta setup. The token, phone-number ID, and recipient are stored only in DPAPI current-user secret envelopes.
 
-An approved template can have no body variables or up to five variables in an operator-configured order. Available mappings are `title`, `message`, `priority`, `type`, `agent`, and `project`; arbitrary notification metadata is never projected. If routing redacts `message`, AgentNotify supplies `Details withheld` so the approved template's parameter count does not change. Title-like values are bounded to 250 Unicode scalars and message to 1024 without splitting surrogate pairs. AgentNotify does not send free-form session text, media headers, documents, buttons, URL parameters, catalogue content, location, contact cards, or reactions.
+An approved template can have no body variables or up to five variables in an operator-configured order. Available mappings are `title`, `message`, `priority`, `type`, `agent`, and `project`; arbitrary notification metadata is never projected. If routing redacts `message`, Nokoo supplies `Details withheld` so the approved template's parameter count does not change. Title-like values are bounded to 250 Unicode scalars and message to 1024 without splitting surrogate pairs. Nokoo does not send free-form session text, media headers, documents, buttons, URL parameters, catalogue content, location, contact cards, or reactions.
 
 The default priority floor is critical. An explicit **Send test** bypasses that floor because it is a deliberate operator action, but it still requires all three acknowledgements and may incur charges. The create response must be bounded and identify exactly one accepted message with a printable `wamid.` identifier. Meta documents no create-message idempotency key, so 408, 425, 5xx, cancellation/timeouts, network failures, and malformed 2xx responses are terminal: replay might duplicate a paid conversation. Only a definite 429 response retries. A process, OS, or power failure after Meta accepts the message but before the local outbox completion commits can still cause recovery replay.
 
@@ -415,7 +415,7 @@ Before enabling a route, create and approve the template in WhatsApp Manager, ob
 
 Implementation status: optional Twilio Content Template adapter and native Settings fields complete; real-account testing, delivery-status webhooks, durable spend budgets, and human UI smoke pending. Direct Meta Cloud API remains the preferred path when an operator does not already depend on Twilio.
 
-Twilio WhatsApp uses the same official Account-scoped Messages resource as Programmable SMS, but AgentNotify treats it as a separate provider with separate consent and template constraints. The profile encrypts its Account SID, API Key SID/secret or local-testing Auth Token, one E.164 recipient, one WhatsApp-enabled `MG…` Messaging Service SID, and one approved `HX…` Content Template SID.
+Twilio WhatsApp uses the same official Account-scoped Messages resource as Programmable SMS, but Nokoo treats it as a separate provider with separate consent and template constraints. The profile encrypts its Account SID, API Key SID/secret or local-testing Auth Token, one E.164 recipient, one WhatsApp-enabled `MG…` Messaging Service SID, and one approved `HX…` Content Template SID.
 
 ```json
 {
@@ -436,24 +436,24 @@ Twilio WhatsApp uses the same official Account-scoped Messages resource as Progr
 }
 ```
 
-The adapter posts `To=whatsapp:+E164`, `MessagingServiceSid`, and `ContentSid`; it adds `ContentVariables` only when the approved template has placeholders. Zero to five numbered placeholders can map, in operator-confirmed order, to `title`, `message`, `priority`, `type`, `agent`, or `project`. A redacted message becomes `Details withheld` to preserve arity. It sends no `Body`, `From`, `MediaUrl`, `StatusCallback`, scheduling field, shortened link, or agent-derived address. The text-only acknowledgement is necessary because AgentNotify cannot inspect the remote `HX` template and therefore cannot technically prove that it lacks media, buttons, catalogues, or dynamic URL variables.
+The adapter posts `To=whatsapp:+E164`, `MessagingServiceSid`, and `ContentSid`; it adds `ContentVariables` only when the approved template has placeholders. Zero to five numbered placeholders can map, in operator-confirmed order, to `title`, `message`, `priority`, `type`, `agent`, or `project`. A redacted message becomes `Details withheld` to preserve arity. It sends no `Body`, `From`, `MediaUrl`, `StatusCallback`, scheduling field, shortened link, or agent-derived address. The text-only acknowledgement is necessary because Nokoo cannot inspect the remote `HX` template and therefore cannot technically prove that it lacks media, buttons, catalogues, or dynamic URL variables.
 
-The default priority floor is critical, and queue validity defaults to 300 seconds. Explicit **Send test** bypasses only the priority floor; all opt-in, template, text-only, and paid acknowledgements remain mandatory. AgentNotify requests content discard and address obfuscation. A bounded response must contain a valid Message SID and an accepted/queued/sending/sent/delivered/read state; failed/undelivered/canceled is permanent.
+The default priority floor is critical, and queue validity defaults to 300 seconds. Explicit **Send test** bypasses only the priority floor; all opt-in, template, text-only, and paid acknowledgements remain mandatory. Nokoo requests content discard and address obfuscation. A bounded response must contain a valid Message SID and an accepted/queued/sending/sent/delivered/read state; failed/undelivered/canceled is permanent.
 
-Twilio documents no idempotency key for Message creation. AgentNotify therefore does not retry 408, 425, 5xx, cancellation/timeouts, network failures, or malformed 2xx responses because the WhatsApp template may already have been accepted and billed; only a definite 429 retries. A process, OS, or power failure between provider acceptance and local outbox completion can still cause recovery replay. Configure Twilio and Meta billing, alerts, template-quality monitoring, recipient opt-out handling, and spend controls before enabling a route. See Twilio's official [WhatsApp overview](https://www.twilio.com/docs/whatsapp/api), [Content Template notification guide](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates), and [Messages resource](https://www.twilio.com/docs/messaging/api/message-resource).
+Twilio documents no idempotency key for Message creation. Nokoo therefore does not retry 408, 425, 5xx, cancellation/timeouts, network failures, or malformed 2xx responses because the WhatsApp template may already have been accepted and billed; only a definite 429 retries. A process, OS, or power failure between provider acceptance and local outbox completion can still cause recovery replay. Configure Twilio and Meta billing, alerts, template-quality monitoring, recipient opt-out handling, and spend controls before enabling a route. See Twilio's official [WhatsApp overview](https://www.twilio.com/docs/whatsapp/api), [Content Template notification guide](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates), and [Messages resource](https://www.twilio.com/docs/messaging/api/message-resource).
 
 ## MQTT 5
 
 Implementation status: adapter and native Settings fields complete; real-broker, Current User mTLS, and human UI smoke pending.
 
-MQTT is intended for user-controlled automation brokers and enterprise event infrastructure. AgentNotify requires a single configured broker and an exact encrypted publish topic. Notification fields cannot choose or modify the broker, port, topic, authentication, QoS, retention, or expiry at delivery time. Topic wildcards (`+`, `#`), `$` system topics, control characters, leading/trailing separators, and empty path levels are rejected.
+MQTT is intended for user-controlled automation brokers and enterprise event infrastructure. Nokoo requires a single configured broker and an exact encrypted publish topic. Notification fields cannot choose or modify the broker, port, topic, authentication, QoS, retention, or expiry at delivery time. Topic wildcards (`+`, `#`), `$` system topics, control characters, leading/trailing separators, and empty path levels are rejected.
 
 ```json
 {
   "brokerHost": "mqtt.example.com",
   "port": 8883,
   "allowPrivateNetwork": false,
-  "clientId": "agentnotify-production",
+  "clientId": "nokoo-production",
   "topicSecretName": "topic",
   "authenticationMode": "username_password",
   "usernameSecretName": "username",
@@ -466,30 +466,30 @@ MQTT is intended for user-controlled automation brokers and enterprise event inf
 }
 ```
 
-Four authentication modes are supported: username/password, Current User client certificate, both, or explicitly acknowledged anonymous TLS. The topic, username/password, and certificate thumbprint are DPAPI-encrypted. For mTLS, import a valid private-key certificate into **Certificates - Current User → Personal** and configure its SHA-1 or SHA-256 thumbprint. AgentNotify looks up only a currently valid certificate with a private key, digital-signature key usage when constrained, and client-authentication EKU when constrained. The private key stays protected by the Windows certificate store; PFX bytes and passwords are not persisted by AgentNotify.
+Four authentication modes are supported: username/password, Current User client certificate, both, or explicitly acknowledged anonymous TLS. The topic, username/password, and certificate thumbprint are DPAPI-encrypted. For mTLS, import a valid private-key certificate into **Certificates - Current User → Personal** and configure its SHA-1 or SHA-256 thumbprint. Nokoo looks up only a currently valid certificate with a private key, digital-signature key usage when constrained, and client-authentication EKU when constrained. The private key stays protected by the Windows certificate store; PFX bytes and passwords are not persisted by Nokoo.
 
-TLS cannot be disabled. AgentNotify enables TLS 1.2/1.3, online revocation checking, platform root trust, and exact hostname validation with no untrusted-certificate, chain-error, revocation-error, or name-error bypass. It resolves the configured ASCII host once, rejects the destination if any answer violates the configured public/private policy, then connects MQTTnet to a selected validated `IPEndPoint` while retaining the original host as TLS SNI and certificate target. Explicit private-network consent permits private/loopback broker addresses but never link-local/cloud-metadata, multicast, unspecified, documentation, or mixed allowed/disallowed answers. Install private PKI roots through normal Windows trust administration rather than weakening the profile.
+TLS cannot be disabled. Nokoo enables TLS 1.2/1.3, online revocation checking, platform root trust, and exact hostname validation with no untrusted-certificate, chain-error, revocation-error, or name-error bypass. It resolves the configured ASCII host once, rejects the destination if any answer violates the configured public/private policy, then connects MQTTnet to a selected validated `IPEndPoint` while retaining the original host as TLS SNI and certificate target. Explicit private-network consent permits private/loopback broker addresses but never link-local/cloud-metadata, multicast, unspecified, documentation, or mixed allowed/disallowed answers. Install private PKI roots through normal Windows trust administration rather than weakening the profile.
 
-The published application message is the route-redacted notification JSON, bounded to 16 KiB, with `application/json` content type, UTF-8 payload indicator, a 5–86,400-second expiry, and stable `agentnotify-delivery-id` and `agentnotify-notification-id` MQTT 5 user properties. The retained flag is always false. AgentNotify does not publish response topics, correlation data, arbitrary user properties, wills, subscriptions, or agent-provided binary content.
+The published application message is the route-redacted notification JSON, bounded to 16 KiB, with `application/json` content type, UTF-8 payload indicator, a 5–86,400-second expiry, and stable `nokoo-delivery-id` and `nokoo-notification-id` MQTT 5 user properties. The retained flag is always false. Nokoo does not publish response topics, correlation data, arbitrary user properties, wills, subscriptions, or agent-provided binary content.
 
 QoS behavior must be chosen deliberately:
 
 - QoS 0 is at-most-once. A timeout or network ambiguity becomes terminal so the durable dispatcher does not intentionally replay it; the message may be lost.
-- QoS 1 is at-least-once. Network/timeouts and transient broker rejection can retry, so consumers must deduplicate using `agentnotify-delivery-id`.
-- QoS 2 is exactly-once only inside the MQTT protocol session. AgentNotify uses a clean one-shot session; a later durable outbox attempt is a new application/session boundary and can duplicate. It therefore requires the same duplicate-risk acknowledgement as QoS 1.
+- QoS 1 is at-least-once. Network/timeouts and transient broker rejection can retry, so consumers must deduplicate using `nokoo-delivery-id`.
+- QoS 2 is exactly-once only inside the MQTT protocol session. Nokoo uses a clean one-shot session; a later durable outbox attempt is a new application/session boundary and can duplicate. It therefore requires the same duplicate-risk acknowledgement as QoS 1.
 
 Broker authentication/topic rejection is permanent; broker busy, rate/quota, and transient implementation failures retry for acknowledged QoS 1/2. The adapter deliberately ignores server redirection so an MQTT broker cannot move delivery to an unconfigured destination. See the [OASIS MQTT 5 standard](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html) and the [.NET Foundation MQTTnet project](https://github.com/dotnet/MQTTnet).
 
-## AgentNotify Relay
+## Nokoo Relay
 
-Relay is the hosted AgentNotify service at `https://an.relay.dev.kabanitech.com`. See
-[AgentNotify Relay](RELAY.md) for what it is and how to connect to it; this section covers the
+Relay is the hosted Nokoo service at `https://an.relay.dev.kabanitech.com`. See
+[Nokoo Relay](RELAY.md) for what it is and how to connect to it; this section covers the
 provider settings only. The endpoint is fixed — there is no deployment choice and no server address
 to enter.
 
 Implementation status: adapter, browser/device-grant pairing, CLI pairing/status, and native Settings integration complete. Payloads are sealed per recipient device with X25519 + XChaCha20-Poly1305 before they leave the machine, verified byte for byte against the relay's shared test vectors, so the relay stores ciphertext it cannot read. A device with no registered public key is skipped rather than sent in the clear. The envelope format has not had an independent cryptographic review.
 
-Select **AgentNotify Relay** as the provider type and use this flow:
+Select **Nokoo Relay** as the provider type and use this flow:
 
 1. Enter an optional sender name, then press **Connect**.
 2. Confirm the displayed short code on the approval page opened in the browser. If a browser cannot
@@ -504,8 +504,8 @@ collapsed **Advanced** section for recovery, CI, and externally provisioned inst
 Headless hosts use the same Core protocol client:
 
 ```bash
-agentnotify relay pair --name "Phone"
-agentnotify relay status
+nokoo relay pair --name "Phone"
+nokoo relay status
 ```
 
 `--json` emits one JSON object per pairing state transition. The CLI saves a new provider disabled by
@@ -524,7 +524,7 @@ advanced options for pointing a test build at a stub Relay; neither is part of n
 A legacy `deployment` key left over from before Relay became hosted-only is ignored rather than
 rejected, so profiles saved by an older build keep working.
 
-Before pairing, AgentNotify calls `/.well-known/agentnotify-relay` and requires API `v1`. It then
+Before pairing, Nokoo calls `/.well-known/nokoo-relay` and requires API `v1`. It then
 uses the RFC 8628-style `/v1/pairing/sender` flow, requires the browser URL to have the same scheme,
 host, and port as the configured Relay, tolerates four consecutive transient poll failures, obeys
 `slow_down`, and verifies the resulting credential through `/v1/installation`. Every call has a
