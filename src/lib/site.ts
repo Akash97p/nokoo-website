@@ -9,7 +9,7 @@ export const site = {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : "https://nokoo.ai",
   /** The hosted relay, where accounts are created and plans are bought. */
-  relayUrl: process.env.NEXT_PUBLIC_RELAY_URL ?? "https://relay.nokoo.ai",
+  relayUrl: process.env.NEXT_PUBLIC_RELAY_URL ?? "https://an.relay.dev.kabanitech.com",
   contact: "legal@kabanitech.com",
 } as const;
 
