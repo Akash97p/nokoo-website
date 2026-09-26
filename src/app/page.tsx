@@ -107,7 +107,7 @@ export default function Home() {
               Route, meter, and hear from every coding agent.
             </h1>
             <p className="mx-auto mt-7 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl">
-              AgentNotify is a local control plane for Claude Code, Codex, OpenCode, and the rest. It routes their model
+              Nokoo is a local control plane for Claude Code, Codex, OpenCode, and the rest. It routes their model
               calls, counts what they spend, and watches your quota — and it does the part other control planes leave out:
               it tells you the moment an agent needs you, and carries your answer back.
             </p>
@@ -115,7 +115,7 @@ export default function Home() {
               <Button asChild size="lg"><a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Try the interface</a></Button>
               <Button asChild size="lg" variant="ghost"><Link href={docsEntry}>Install with your agent</Link></Button>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">Local first · open source · no telemetry. Windows desktop app; broker, CLI, dashboard, and router on macOS and Linux too.</p>
+            <p className="mt-5 text-sm text-muted-foreground">Local first · free on your machine · no telemetry. Windows desktop app; broker, CLI, dashboard, and router on macOS and Linux too.</p>
           </Reveal>
           <Reveal delay={0.15} className="mt-16">
             <ControlPlaneDiagram />
@@ -179,7 +179,7 @@ export default function Home() {
             <h2 className="mt-5 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Control planes route and meter. None of them tells you an agent is stuck.</h2>
             <p className="mt-5 text-lg leading-8 text-muted-foreground">
               An agent can work for hours without help. The expensive moment is when one stops silently at a permission
-              prompt, a missing credential, or a decision only you can make. An AI gateway sees the request stop. AgentNotify
+              prompt, a missing credential, or a decision only you can make. An AI gateway sees the request stop. Nokoo
               asks you, and hands the answer back.
             </p>
           </Reveal>
@@ -188,7 +188,7 @@ export default function Home() {
               <div className="grid grid-cols-[minmax(0,1fr)_88px_104px] border-b bg-muted/50 px-4 py-3 text-xs font-medium text-muted-foreground sm:grid-cols-[minmax(0,1fr)_120px_120px]">
                 <span />
                 <span className="text-center">Typical AI gateway</span>
-                <span className="text-center text-foreground">AgentNotify</span>
+                <span className="text-center text-foreground">Nokoo</span>
               </div>
               {comparison.map((item) => (
                 <div key={item.row} className="grid grid-cols-[minmax(0,1fr)_88px_104px] items-center border-b px-4 py-3 text-sm last:border-b-0 sm:grid-cols-[minmax(0,1fr)_120px_120px]">
@@ -238,12 +238,12 @@ export default function Home() {
           <Reveal delay={0.1}>
             <Card className="min-w-0 overflow-hidden bg-black py-0">
               <div className="relative p-5 font-mono text-[13px] leading-6 text-zinc-300">
-                <CopyCommand value={'agentnotify send --type permission_required --title "Deploy approval" --message "May I publish the release?"'} />
-                <span className="text-zinc-600">$ </span>agentnotify send \<br />
+                <CopyCommand value={'nokoo send --type permission_required --title "Deploy approval" --message "May I publish the release?"'} />
+                <span className="text-zinc-600">$ </span>nokoo send \<br />
                 &nbsp;&nbsp;--type permission_required \<br />
                 &nbsp;&nbsp;--title <span className="text-white">&quot;Deploy approval&quot;</span> \<br />
                 &nbsp;&nbsp;--message <span className="text-white">&quot;May I publish the release?&quot;</span>
-                <pre className="mt-5 overflow-x-auto border-t border-zinc-800 pt-5"><code>{`$ agentnotify install-harness claude --ask
+                <pre className="mt-5 overflow-x-auto border-t border-zinc-800 pt-5"><code>{`$ nokoo install-harness claude --ask
 
 # Claude Code now pauses for your decision:
 #   "Claude Code approval: Bash rm -rf /tmp/build"
@@ -314,7 +314,7 @@ export default function Home() {
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <Reveal>
           <Card className="items-center bg-primary py-12 text-center text-primary-foreground">
-            <CardHeader className="max-w-3xl"><CardTitle className="text-3xl tracking-[-0.035em] sm:text-4xl">Stop checking every terminal.</CardTitle><CardDescription className="mt-3 text-base text-primary-foreground/70">Install AgentNotify, hand your coding agent the bundled skill, and let the control plane tell you when a human is actually needed.</CardDescription></CardHeader>
+            <CardHeader className="max-w-3xl"><CardTitle className="text-3xl tracking-[-0.035em] sm:text-4xl">Stop checking every terminal.</CardTitle><CardDescription className="mt-3 text-base text-primary-foreground/70">Install Nokoo, hand your coding agent the bundled skill, and let the control plane tell you when a human is actually needed.</CardDescription></CardHeader>
             <CardContent className="flex flex-wrap justify-center gap-3"><Button asChild variant="secondary"><a href={demoPath} target="_blank" rel="noreferrer">Try the interface <ArrowRight /></a></Button><Button asChild variant="outline" className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"><Link href={docsEntry}>Install with your agent</Link></Button></CardContent>
           </Card>
         </Reveal>

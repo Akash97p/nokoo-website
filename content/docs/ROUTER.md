@@ -7,7 +7,7 @@ over across an ordered list of targets, and records every request and physical a
 ledger. It is how Codex can run on DeepSeek, OpenRouter, Kimi, Z.ai, or a local Ollama model, and how
 Claude Code can run on an OpenAI-compatible provider, without either agent knowing.
 
-It is off until the owner turns it on. Nothing else in AgentNotify depends on it, and a broker with
+It is off until the owner turns it on. Nothing else in Nokoo depends on it, and a broker with
 the router off makes no request to any model provider.
 
 ## Endpoints
@@ -24,10 +24,10 @@ All routes live on the broker's existing loopback listener, under `/router/v1`:
 
 - **Off:** every `/router` request gets `404 {"error":{"type":"router_disabled",...}}`.
 - **Authentication:** a separate router key, not the broker's `/v1` bearer token. It is accepted as
-  `x-agentnotify-router-key: <key>`, `Authorization: Bearer <key>`, or `x-api-key: <key>` and compared
+  `x-nokoo-router-key: <key>`, `Authorization: Bearer <key>`, or `x-api-key: <key>` and compared
   in constant time. The key only grants spending through the router; it cannot read notifications or
   configuration. It is generated when the router is first enabled and can be regenerated. When it
-  arrives in `x-agentnotify-router-key`, the client's `Authorization` or `x-api-key` is its **own**
+  arrives in `x-nokoo-router-key`, the client's `Authorization` or `x-api-key` is its **own**
   Anthropic credential, used only for its own models (see [Claude Code's own models](#claude-codes-own-models)).
 - **Loopback:** the same `Host` check as the web interface (loopback names only), so a DNS-rebinding
   page cannot reach it. Browsers are refused: a request carrying an `Origin` header gets `403`.
@@ -125,7 +125,7 @@ no public list, so Codex's own `models_cache.json` (entries whose `visibility` i
 instead. The OpenAI shape `{"data":[{"id"}]}`, a bare array, and `{"models":[{"name"}]}` are accepted,
 responses are capped at 4 MiB and 500 models, and the reply carries each model's wire.
 
-**Reusing a key AgentNotify already has.** A key saved under Live quota → API accounts for DeepSeek,
+**Reusing a key Nokoo already has.** A key saved under Live quota → API accounts for DeepSeek,
 Moonshot, SiliconFlow, or OpenRouter can be chosen as a provider's key. The upstream then stores no key
 of its own; its `credential_ref` is `api_account:<id>`, and each attempt opens that account's key, so
 the key is entered and rotated in one place. OpenAI and Anthropic accounts there hold Admin keys, which
@@ -143,7 +143,7 @@ reused.
 
 Two presets use a monthly plan the owner already pays for, through a sign-in another tool on this
 computer keeps. **Both are unofficial**: neither plan documents use from other applications. They are
-opt-in, labelled so on the page, and store no key in AgentNotify.
+opt-in, labelled so on the page, and store no key in Nokoo.
 
 - **ChatGPT plan (`codex_chatgpt`).** Each attempt reads the `auth.json` of the Codex account the
   upstream names (`credential_ref` `profile:<directory>`, one of the accounts listed above; the
@@ -168,7 +168,7 @@ broker log that says what to run); in a fallback chain the next target is tried.
 
 **OpenCode Go** is a subscription too, but authenticates with an ordinary key. Its service asks each
 client to name itself and to send a stable per-conversation ID, so every upstream request carries
-`User-Agent: agentnotify-router/<version>`, and a request to an `opencode.ai` host carries
+`User-Agent: nokoo-router/<version>`, and a request to an `opencode.ai` host carries
 `x-opencode-session` with the agent's own conversation ID (`x-opencode-session`,
 `x-claude-code-session-id`, `session_id`, or `conversation_id` from the inbound request), or a
 per-process ID when the agent sent none.
@@ -201,9 +201,9 @@ requested `model` string. It returns an ordered list of concrete targets `{upstr
 Disabled upstreams are skipped inside a combo, and a combo with no enabled target fails with
 `no_enabled_target`.
 
-### Smart switching
+### Smart routing
 
-The Routing page's Smart switching card stores one strategy in `router_settings.switch_strategy`: `off`, `ordered`,
+The Routing page's Smart routing card stores one strategy in `router_settings.switch_strategy`: `off`, `ordered`,
 `sticky`, or `round_robin`. When enabled, whatever the rules above resolved to is expanded with **the
 same model at every other enabled provider that lists it**, so a usage limit, an outage, or a refused
 key can hand the request to the same model somewhere else with no route to set up:
@@ -230,6 +230,77 @@ key can hand the request to the same model somewhere else with no route to set u
   own errors still pass through unchanged.
 
 The Routing page lists every model more than one provider serves, with the base order it can use.
+
+### Adaptive routing
+
+Smart routing chooses *where* a model runs. Adaptive routing chooses *which model* answers, by how
+hard the request is, and runs first: its choice is then resolved by the rules above, smart routing
+included. The owner names a model for three tiers — light (greetings, quick questions, commit
+messages, one-line edits), standard (everyday coding), deep (migrations, repo-wide refactors, design,
+subtle concurrency, performance, or security work) — each any selector a request could name: a
+`provider/model`, a route, a combo, a bare model a provider lists, or a bare Claude model, which a
+connected Claude Code sends to Anthropic with its own sign-in. Stored in `router_settings`
+(`adaptive_enabled`, `adaptive_engine`, `adaptive_skip_agent_traffic`, `adaptive_tiers`,
+`adaptive_jev_key`), off by default, and refused on until all three tiers name a model.
+
+**What it decides from.** The latest thing the person typed, read from any of the three wires with
+agent-injected blocks (`<system-reminder>`, `<environment_context>`, IDE selections, command
+wrappers) removed, and at most 4,000 characters of it. Never the system prompt, tools, files, or
+earlier turns.
+
+**Which requests it touches, in order** (`AdaptiveRouter`):
+
+1. Only a request for a model in one of its tiers — matched exactly or by model ID, so a bare
+   `claude-opus-5` matches a `plan/claude-opus-5` tier. Any other model, route, or combo is left alone.
+2. With *Leave structured agent traffic alone* on (the default), a request that forces a tool call or
+   a JSON answer (`tool_choice` of `required`/`any`/a named tool, `response_format` or `text.format`
+   JSON) is an agent's own side call and keeps its model.
+3. **A turn is decided once.** Only a request whose last human message has no tool result after it is
+   classified. Every later request of that turn — the agent's tool loop — follows that decision,
+   keyed by the agent's session header or, without one, a hash of the system prompt's start and the
+   first message. Changing models under a turn in progress would lose its reasoning state; a turn whose
+   start the router never saw keeps the model asked for. Between turns a model change is as safe as
+   Claude Code's own `/model`.
+4. **Follow-ups and unsure answers keep the conversation's model.** "ok, go ahead", "try again",
+   "use the other one" are classified as *continuation*, and so is anything below 60% probability;
+   both keep the tier the conversation is on, or the requested model when it has none.
+5. **Long conversations never move down.** Above roughly 40,000 tokens of request, a smaller tier is
+   not taken: the context is cached on the current model, and re-reading all of it uncached on a
+   smaller one can cost more than the cheaper answer saves. Moving up still happens.
+
+**Three engines.** Two run on this computer and send nothing anywhere; the third is Jev.
+
+*Sift* (`SiftModel`), Nokoo's own model, is the default local engine: word and character
+TF-IDF over the first 1,500 characters plus the heuristics' features below, into a calibrated
+logistic regression. It is built in scikit-learn and shipped as an embedded resource
+(`sift-model.json.gz`, 1.2 MB, 37,940 features); the C# port reproduces
+scikit-learn's tokenizers, sublinear TF-IDF, and L2 normalisation in code points, and a test holds it
+to the Python model's probabilities (to 1e-6) on 1,322 reference prompts, including accents, emoji,
+CJK, and over-long text. In C# it takes 0.3 ms per message at the median and 9.6 ms at p99, after a
+one-time load of about 260 ms on first use. If the model cannot be read, the heuristics decide.
+
+*Heuristics* (`AdaptiveHeuristics`) is the original local engine: a multinomial logistic model over
+hand-built features — length and shape, and counts of vocabulary groups such as scope ("across the
+repo"), known-hard problems ("race condition", "multi-tenant", "zero-downtime"), trivial edits
+("typo", "rename"), and acknowledgements. The corpus, features, and training scripts are in
+`tools/adaptive-routing`; a test holds the C# port to the Python reference on every message.
+
+*Jev* — TypeSafe AI's decision model — is opt-in with the owner's own key: one `choice` question
+(`JevClassifier.Question`, the same four answers) to the fixed endpoint
+`https://api.typesafe.ai/v1/systemone`, once per turn, with a 3-second timeout. The key is sealed with
+the same protector as provider keys, write-only on the page, and sent nowhere else. Only the cleaned
+latest message travels. If Jev refuses the key, times out, or answers malformed, that request is
+decided by Sift and Jev is paused (10 minutes after a refused key, 30–60 seconds otherwise),
+so an outage never adds a timeout to every request; the Routing page shows the last problem.
+
+**What is recorded.** Each ledger row gains `adaptive_tier`, `adaptive_engine`,
+`adaptive_probability`, `adaptive_reason` (`classified`, `follows_turn`, `continuation`,
+`low_confidence`, `long_conversation`, `agent_traffic`, `no_text`), and `adaptive_shift` (−1 moved to
+a smaller model than requested, 1 to a larger). No text is stored. The Routing page's week counts come
+from those columns; its *Recent decisions* list shows the first 80 characters of each decided
+message from memory only, and is empty after a restart. *Try a prompt* shows Sift's and the
+heuristics' answers side by side as you type, from `POST /ui/api/router/adaptive/preview`; *Ask Jev*
+sends the same text to Jev once, and only when pressed.
 
 ### Every Codex account is a ChatGPT-plan provider
 
@@ -379,8 +450,8 @@ between streamed chunks. A client disconnect cancels the upstream request and re
 ## Putting routed models in the agent's own picker
 
 Typing a selector works, but the point is to pick a routed model from the menu the agent already has.
-Each host exposes that differently, so AgentNotify writes each host's own mechanism. Connecting is a
-button on the Router → Agents page, or `agentnotify router connect <agent>`.
+Each host exposes that differently, so Nokoo writes each host's own mechanism. Connecting is a
+button on the Router → Agents page, or `nokoo router connect <agent>`.
 
 **Every account, not only the default one.** The page lists each Codex and Claude Code account from
 the list Live quota monitors (`QuotaAccountDefinition.Monitored`): the built-in `~/.codex` and
@@ -388,11 +459,11 @@ the list Live quota monitors (`QuotaAccountDefinition.Monitored`): the built-in 
 `~/.codex-second` (ID `codex:home:second`), and accounts added by hand (`q_…`), minus WSL profiles.
 Each is connected in its own directory, and a Codex account other than the built-in one gets its own
 generated catalogue (`codex-model-catalog-<id>.json`) because its shell-tool choice is its own. The CLI
-takes the same IDs: `agentnotify router connect codex:home:second`.
+takes the same IDs: `nokoo router connect codex:home:second`.
 
-**Codex** reads a model catalogue from a file named by its `model_catalog_json` setting. AgentNotify
+**Codex** reads a model catalogue from a file named by its `model_catalog_json` setting. Nokoo
 generates that file — one entry per `provider/model`, per alias, and per `combo/<name>` — and adds a
-`[model_providers.agentnotify]` block pointing at `/router/v1` with the router key in
+`[model_providers.nokoo]` block pointing at `/router/v1` with the router key in
 `experimental_bearer_token`, so Codex authenticates with no environment variable set. Every routed
 model then appears in `/model`. For a model on a ChatGPT-plan upstream, the catalogue entry is Codex's own, copied from its
 `models_cache.json` with only the slug, display name, and priority changed, so that model keeps Codex's
@@ -404,14 +475,14 @@ Codex also resolves several settings per model, and the same page
 writes them: reasoning effort, the subagent model and its effort (`default_subagent_model`), the
 review model, and which shell tool a routed model is offered.
 
-That last one matters. Codex's `shell_type` chooses the tool the model must call; AgentNotify defaults
+That last one matters. Codex's `shell_type` chooses the tool the model must call; Nokoo defaults
 to `shell_command`, one ordinary function call that third-party models handle far more reliably than
 the stateful `unified_exec` session tool. Codex's `local` shell type is deliberately not offered: it
 is a built-in tool type rather than a function, and translation to another wire drops it, which would
 leave the model unable to run anything.
 
 Codex's catalogue entries must also carry instructions. Its own models get them from its backend, and
-a routed model has no such entry, so AgentNotify supplies its own short, plain preamble rather than
+a routed model has no such entry, so Nokoo supplies its own short, plain preamble rather than
 copying anyone else's prompt.
 
 **Claude Code** has both a curated picker and per-entry environment variables, so both are written.
@@ -420,7 +491,7 @@ Its `modelPicker` setting gains a row per routed selector, each declaring the kn
 says so on every start. Optionally those rows replace Anthropic's own lineup instead of following it; that switch is off unless
 the owner turns it on.
 Separately, `ANTHROPIC_BASE_URL`, `ANTHROPIC_CUSTOM_HEADERS` (the router key, as
-`x-agentnotify-router-key: <key>`, after any header lines the owner already sends), and the model each
+`x-nokoo-router-key: <key>`, after any header lines the owner already sends), and the model each
 built-in entry resolves (`ANTHROPIC_MODEL`, `ANTHROPIC_DEFAULT_OPUS_MODEL`, `…SONNET…`, `…HAIKU…`, and
 the background `ANTHROPIC_SMALL_FAST_MODEL`) are set in the `env` block of `settings.json`.
 `ANTHROPIC_AUTH_TOKEN` is deliberately not set.
@@ -447,17 +518,17 @@ working; routed models keep working too while the router is on.
 
 ### What writing those files is held to
 
-- **A copy first.** Every change copies the file into AgentNotify's own directory first. The Agents
+- **A copy first.** Every change copies the file into Nokoo's own directory first. The Agents
   page lists those copies with the reason each was taken, and restores any of them; a restore copies
   the current file too, so it can be stepped back.
-- **Only AgentNotify's own lines.** Codex's `config.toml` is edited between marker comments, in two
+- **Only Nokoo's own lines.** Codex's `config.toml` is edited between marker comments, in two
   regions because TOML is positional — bare keys must precede the first table. Nothing else in the
   file is reordered or reformatted. A key the owner already set that the managed region is about to
   set is commented out rather than left in place, because TOML rejects a key assigned twice and Codex
   would refuse to start. Claude Code's `settings.json` is merged as JSON, touching only the keys
   listed above.
 - **Their own settings come back.** Disconnecting restores the values the file held before, not merely
-  the absence of AgentNotify's lines, and un-comments what was commented out.
+  the absence of Nokoo's lines, and un-comments what was commented out.
 - **Nothing for an agent that is not installed.** No directory is created to make a host appear
   connected.
 - **The catalogue follows the router.** Changing upstreams, routes, or the key rewrites a connected
@@ -500,24 +571,24 @@ The **Model router** group in the navigation holds five pages:
 | Page | What it does |
 | --- | --- |
 | Providers | The on/off switch; your providers, each with an on/off switch; and a gallery of presets grouped as subscriptions, pay per token, and this computer. Adding one is: pick it, paste a key (or reuse OpenCode's, or a subscription sign-in), tick models from the fetched list, save. Slug, wire, and base URL sit under Advanced. The base URLs and key regeneration are under a disclosure. |
-| Routing | Optional: nicknames (an alias, one model) and fallback chains (a combo, tried in order), each picked from the providers' models; what an unknown model falls back to; and Smart switching — ordered, sticky, or round-robin across providers that serve the same model, plus Claude Code's cross-model fallback. The page says plainly that no route is needed to use a model. |
+| Routing | Optional: nicknames (an alias, one model) and fallback chains (a combo, tried in order), in this order: Smart routing — ordered, sticky, or round-robin across providers that serve the same model, plus Claude Code's cross-model fallback; Adaptive routing — the three tiers, the decision engine and Jev key, a live "try a prompt" preview, the week's counts, and recent decisions; then nicknames (an alias, one model) and fallback chains (a combo, tried in order), each picked from the providers' models, and what an unknown model falls back to. The page says plainly that no route is needed to use a model. |
 | Agents | Connect an agent so its own picker lists these models, choose its subagent/review/effort settings, disconnect, and restore a saved copy of its configuration |
 | Activity | The request ledger with per-attempt detail, and totals by model |
 | Effort mapping | One effort table per model family (Families tab), with per-model overrides under Per model; applies to Claude Code's and Codex's efforts alike |
 
 The Agents page also shows copyable snippets for configuring a host by hand, for anyone who would
-rather AgentNotify did not touch their files.
+rather Nokoo did not touch their files.
 
 Codex (`~/.codex/config.toml`):
 
 ```toml
-model_provider = "agentnotify"
+model_provider = "nokoo"
 model = "combo/coding"
 
-[model_providers.agentnotify]
-name = "AgentNotify router"
+[model_providers.nokoo]
+name = "Nokoo router"
 base_url = "http://127.0.0.1:47821/router/v1"
-env_key = "AGENTNOTIFY_ROUTER_KEY"
+env_key = "NOKOO_ROUTER_KEY"
 wire_api = "responses"
 ```
 
@@ -525,19 +596,19 @@ Claude Code:
 
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:47821/router
-export ANTHROPIC_CUSTOM_HEADERS="x-agentnotify-router-key: $(agentnotify router key)"
+export ANTHROPIC_CUSTOM_HEADERS="x-nokoo-router-key: $(nokoo router key)"
 export ANTHROPIC_MODEL=combo/coding
 ```
 
-`agentnotify router status` prints whether the router is on and its base URLs, and
-`agentnotify router key` prints the router key from the local config (like `agentnotify token`); both
-read the file directly. `agentnotify router agents` lists the agents and every selector they can be
-pointed at, while `agentnotify router connect <agent> [--model <selector>]` and
-`agentnotify router disconnect <agent>` ask the running broker to write or undo those files, since it
+`nokoo router status` prints whether the router is on and its base URLs, and
+`nokoo router key` prints the router key from the local config (like `nokoo token`); both
+read the file directly. `nokoo router agents` lists the agents and every selector they can be
+pointed at, while `nokoo router connect <agent> [--model <selector>]` and
+`nokoo router disconnect <agent>` ask the running broker to write or undo those files, since it
 owns the key and the generated catalogue.
 
 The web API under `/ui/api/router` follows the existing web-interface rules: loopback host check,
-`X-AgentNotify-UI: 1` on every change, and write-only secrets.
+`X-Nokoo-UI: 1` on every change, and write-only secrets.
 
 ## Relationship to Usage and Live quota
 
@@ -556,7 +627,11 @@ also written to the agent's own log. The Router page shows its own totals with t
 ## Not implemented yet
 
 - Policy routing (`policy/<id>`) scored on quota, health, cost, and latency evidence.
-- Weighted, weighted-random, or least-used combo strategies; ordered, sticky, and round-robin smart switching exist.
+- Weighted, weighted-random, or least-used combo strategies; ordered, sticky, and round-robin smart routing exist.
+- Adaptive routing for subagent and review requests as such: nothing in a request says it came from a
+  subagent, so one is classified like any conversation's first message.
+- Measured token savings from adaptive routing. The ledger counts requests moved to a smaller or larger
+  model, but not what the requested model would have cost, so the page shows counts, not a percentage.
 - Pinning a Codex account pool; Gemini and Ollama-native wires.
 - Connectors for the other hosts (OpenCode, Kilo, Cursor, Gemini CLI); only Codex and Claude Code
   have one, and each needs that host's own model-list mechanism rather than a generic file edit.

@@ -1,10 +1,10 @@
-# AgentNotify API
+# Nokoo API
 
-Base URL: `http://127.0.0.1:47821` (configurable via `config.json` `port` or `AGENTNOTIFY_PORT`).
+Base URL: `http://127.0.0.1:47821` (configurable via `config.json` `port` or `NOKOO_PORT`).
 All `/v1/*` routes require `Authorization: Bearer <token>`. The token is generated on first launch
-and stored as `authToken` in the platform data directory's `config.json` (`%LOCALAPPDATA%\AgentNotify`
-on Windows; `$XDG_DATA_HOME/AgentNotify` or `~/.local/share/AgentNotify` on macOS/Linux). It can be
-overridden by `AGENTNOTIFY_TOKEN` or `--token` on the CLI.
+and stored as `authToken` in the platform data directory's `config.json` (`%LOCALAPPDATA%\Nokoo`
+on Windows; `$XDG_DATA_HOME/Nokoo` or `~/.local/share/Nokoo` on macOS/Linux). It can be
+overridden by `NOKOO_TOKEN` or `--token` on the CLI.
 
 Priority/status enum strings and built-in type IDs are **snake_case** (`input_required`, `permission_required`, etc.). Type IDs may also be user-defined: 1–64 lowercase letters, numbers, or underscores, starting with a letter. CLI input accepts hyphens and normalizes them to underscores.
 
@@ -65,7 +65,7 @@ Validation failures return `400` with `{ "error": "<message>" }`.
 Accepts ARC 0.2 `request.created`, `request.updated`, `response.submitted`, and `request.resolved`
 events. The sender, execution context, semantic request kind, title, message, priority, and stable
 condition key project into the native notification lifecycle.
-`extensions.x-agentnotify.notification_type` may select a configured local type ID; other correctly
+`extensions.x-nokoo.notification_type` may select a configured local type ID; other correctly
 namespaced vendor extensions are ignored. `arc_version` must be exactly `"0.2"`; 0.1 is rejected.
 
 An unkeyed created event derives a stable key from `sender.id` and `event_id`, so a delivery retry
@@ -194,7 +194,7 @@ return `404`. Cancelling an already-terminal interaction is idempotent.
 
 ### `POST /v1/interactions/{id}/publish`
 
-Republish the interaction through every matching enabled AgentNotify Relay route whose payload policy
+Republish the interaction through every matching enabled Nokoo Relay route whose payload policy
 allows message content. The response is `{ "id": "...", "published": <count> }`. Returns `400` when
 Relay publishing is not configured and `404` for an unknown interaction. Publishing is idempotent per
 interaction and Relay provider.
@@ -237,7 +237,7 @@ services or logs.
 ## Web interface
 
 Everything under `/ui` belongs to the web interface and is **not** part of the stable API.
-`/ui/api/*` takes no bearer token, requires `X-AgentNotify-UI: 1` and a loopback `Host` on every
+`/ui/api/*` takes no bearer token, requires `X-Nokoo-UI: 1` and a loopback `Host` on every
 state change, and may change between releases without notice.
 Automate against `/v1`. The trust model is in [WEB_UI.md](WEB_UI.md).
 
@@ -281,17 +281,17 @@ Malformed payloads (invalid JSON) are handled gracefully — never crash the bro
 ### CLI (recommended)
 
 ```bash
-agentnotify.exe send --type completed --title "Build complete" --message "All tests passed."
+nokoo.exe send --type completed --title "Build complete" --message "All tests passed."
 ```
 
 ### PowerShell
 
 ```powershell
-$config = Get-Content "$env:LOCALAPPDATA\AgentNotify\config.json" | ConvertFrom-Json
+$config = Get-Content "$env:LOCALAPPDATA\Nokoo\config.json" | ConvertFrom-Json
 $headers = @{ Authorization = "Bearer $($config.authToken)" }
 $body = @{
   agent = "codex"
-  project = "AgentNotify"
+  project = "Nokoo"
   type = "input_required"
   priority = "high"
   title = "Need input"
@@ -303,10 +303,10 @@ Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$($config.port)/v1/notific
 
 ### curl from WSL
 
-Prefer `agentnotify.exe`; if direct HTTP debugging is explicitly required:
+Prefer `nokoo.exe`; if direct HTTP debugging is explicitly required:
 
 ```bash
-TOKEN="$(agentnotify.exe token)"
+TOKEN="$(nokoo.exe token)"
 curl --fail-with-body -sS -X POST http://127.0.0.1:47821/v1/notifications \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
@@ -317,7 +317,7 @@ unset TOKEN
 ### ARC event
 
 ```bash
-TOKEN="$(agentnotify.exe token)"
+TOKEN="$(nokoo.exe token)"
 curl --fail-with-body -sS -X POST http://127.0.0.1:47821/v1/events \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
@@ -327,7 +327,7 @@ curl --fail-with-body -sS -X POST http://127.0.0.1:47821/v1/events \
     "event_type":"request.created",
     "occurred_at":"2026-08-26T01:15:00Z",
     "sender":{"id":"codex","name":"Codex"},
-    "context":{"project":"agent-notify"},
+    "context":{"project":"nokoo"},
     "request":{
       "kind":"completion",
       "title":"Build complete",

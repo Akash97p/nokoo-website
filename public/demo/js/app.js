@@ -86,7 +86,7 @@ const state = {
 // ---- theme ---------------------------------------------------------------------------------
 
 function storedTheme() {
-  try { return localStorage.getItem("agentnotify-theme"); } catch { return null; }
+  try { return localStorage.getItem("nokoo-theme"); } catch { return null; }
 }
 
 function applyTheme(theme) {
@@ -145,13 +145,13 @@ function buildShell() {
   themeButton.addEventListener("click", () => {
     const next = currentTheme() === "dark" ? "light" : "dark";
     applyTheme(next);
-    try { localStorage.setItem("agentnotify-theme", next); } catch { /* per-viewer convenience only */ }
+    try { localStorage.setItem("nokoo-theme", next); } catch { /* per-viewer convenience only */ }
     themeButton.replaceChildren(icon(next === "dark" ? "sun" : "moon"));
   });
 
   const sidebar = h("aside", { class: "sidebar" },
     h("a", { class: "brand", href: "#/overview", onClick: closeNav }, brandMark(),
-      h("span", null, h("span", { class: "brand-name", text: "AgentNotify" }), h("br"), h("span", { class: "brand-sub", text: "Agent control plane" }))),
+      h("span", null, h("span", { class: "brand-name", text: "Nokoo" }), h("br"), h("span", { class: "brand-sub", text: "Agent control plane" }))),
     nav);
 
   // The top bar is the page's own frame: where you are, the tabs of the entry you are in, and —
@@ -245,7 +245,7 @@ async function render() {
     if (entry === route.entry) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   }
   drawFrame(route);
-  document.title = `${route.title} · AgentNotify`;
+  document.title = `${route.title} · Nokoo`;
 
   if (state.cleanup) { try { state.cleanup(); } catch { /* view already gone */ } state.cleanup = null; }
   const token = ++state.renderToken;
@@ -275,7 +275,7 @@ async function render() {
 async function start() {
   await refreshOverview();
   if (!state.overview) {
-    mount(state.root, h("div", { class: "boot" }, notice("The AgentNotify broker is not responding. Is it still running?", "danger")));
+    mount(state.root, h("div", { class: "boot" }, notice("The Nokoo broker is not responding. Is it still running?", "danger")));
     state.root.removeAttribute("aria-busy");
   } else {
     await render();

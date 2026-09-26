@@ -1,7 +1,7 @@
 # Agent harnesses (auto-notify)
 
-A skill teaches the model to call `agentnotify`. A **harness** removes the
-remembering: the host itself calls AgentNotify at attention boundaries —
+A skill teaches the model to call `nokoo`. A **harness** removes the
+remembering: the host itself calls Nokoo at attention boundaries —
 permission prompts, questions, session completion, session errors — through
 its own hooks or plugin system.
 
@@ -14,7 +14,7 @@ model forgetting.
 The hook/plugin notifiers (OpenCode, Codex, Claude, Gemini, Copilot, Cursor,
 Muse, Kilo, Pi) are **notify-only**:
 
-- They send `agentnotify send` as a side effect and return no decision.
+- They send `nokoo send` as a side effect and return no decision.
 - Hook scripts always exit `0`. The OpenCode/Kilo plugins never throw.
 - A missing CLI, stopped broker, or failed send is silent. The session
   continues exactly as if the harness were absent.
@@ -31,8 +31,8 @@ the interaction broker ([INTERACTIONS.md](INTERACTIONS.md)):
 ## Ask mode (Codex + Claude Code)
 
 ```bash
-agentnotify install-harness codex --ask
-agentnotify install-harness claude --ask
+nokoo install-harness codex --ask
+nokoo install-harness claude --ask
 ```
 
 Ask mode replaces the notify-only permission hook with a blocking hook that
@@ -65,26 +65,26 @@ The full relay→phone→host loop (answering from mobile) is implemented and do
 Offline, no downloads. One command per host:
 
 ```bash
-agentnotify install-harness opencode
-agentnotify install-harness codex
-agentnotify install-harness claude
-agentnotify install-harness gemini
-agentnotify install-harness copilot
-agentnotify install-harness cursor
-agentnotify install-harness muse
-agentnotify install-harness kilo
-agentnotify install-harness openclaw
-agentnotify install-harness hermes
-agentnotify install-harness pi
+nokoo install-harness opencode
+nokoo install-harness codex
+nokoo install-harness claude
+nokoo install-harness gemini
+nokoo install-harness copilot
+nokoo install-harness cursor
+nokoo install-harness muse
+nokoo install-harness kilo
+nokoo install-harness openclaw
+nokoo install-harness hermes
+nokoo install-harness pi
 ```
 
-`agentnotify install harness <agent>` is accepted as a readable alias.
+`nokoo install harness <agent>` is accepted as a readable alias.
 `claude-code` is accepted for `claude`. Add `--scope project` to install
 under the current repository, `--dry-run` to inspect the destination,
 `--path DIRECTORY` for a custom harness root, or `--force` after reviewing
 a locally modified harness file. Changed files are protected unless
 `--force` is explicit. Hook JSON is merged: unrelated entries survive, and
-reinstalling never duplicates the AgentNotify entries.
+reinstalling never duplicates the Nokoo entries.
 
 Restart the host session after installing. Hooks and plugins load at
 startup.
@@ -92,33 +92,33 @@ startup.
 ### Where files land
 
 ```text
-OpenCode     ~/.config/opencode/plugins/agentnotify.js
-Codex        ~/.codex/agentnotify/agentnotify_hook.py + ~/.codex/hooks.json
-Claude Code  ~/.claude/agentnotify/agentnotify_hook.py + ~/.claude/settings.json
-Gemini CLI   ~/.gemini/agentnotify/agentnotify_hook.py + ~/.gemini/settings.json
-Copilot CLI  ~/.copilot/agentnotify/agentnotify_hook.py + ~/.copilot/hooks/agentnotify.json
-Cursor       ~/.cursor/agentnotify/agentnotify_hook.py + ~/.cursor/hooks.json
-Muse Code    ~/.config/muse/agentnotify/agentnotify_hook.py + ~/.config/muse/settings.json
-Kilo Code    ~/.config/kilo/plugin/agentnotify.js
-OpenClaw     ~/.openclaw/agentnotify/agentnotify_openclaw.py (watch daemon, no config merge)
-Hermes Agent ~/.hermes/plugins/agentnotify/ (plus config.yaml edits, see below)
-Pi           ~/.pi/agent/extensions/agentnotify.ts
+OpenCode     ~/.config/opencode/plugins/nokoo.js
+Codex        ~/.codex/nokoo/nokoo_hook.py + ~/.codex/hooks.json
+Claude Code  ~/.claude/nokoo/nokoo_hook.py + ~/.claude/settings.json
+Gemini CLI   ~/.gemini/nokoo/nokoo_hook.py + ~/.gemini/settings.json
+Copilot CLI  ~/.copilot/nokoo/nokoo_hook.py + ~/.copilot/hooks/nokoo.json
+Cursor       ~/.cursor/nokoo/nokoo_hook.py + ~/.cursor/hooks.json
+Muse Code    ~/.config/muse/nokoo/nokoo_hook.py + ~/.config/muse/settings.json
+Kilo Code    ~/.config/kilo/plugin/nokoo.js
+OpenClaw     ~/.openclaw/nokoo/nokoo_openclaw.py (watch daemon, no config merge)
+Hermes Agent ~/.hermes/plugins/nokoo/ (plus config.yaml edits, see below)
+Pi           ~/.pi/agent/extensions/nokoo.ts
 ```
 
 Project scope (`--scope project`) writes under the repository instead:
 
 ```text
-OpenCode     <repo>/.opencode/plugins/agentnotify.js
-Codex        <repo>/.codex/agentnotify/agentnotify_hook.py + <repo>/.codex/hooks.json
-Claude Code  <repo>/.claude/agentnotify/agentnotify_hook.py + <repo>/.claude/settings.json
-Gemini CLI   <repo>/.gemini/agentnotify/agentnotify_hook.py + <repo>/.gemini/settings.json
-Copilot CLI  <repo>/.github/hooks/agentnotify.json + <repo>/.github/agentnotify/agentnotify_hook.py
-Cursor       <repo>/.cursor/agentnotify/agentnotify_hook.py + <repo>/.cursor/hooks.json
-Muse Code    <repo>/.muse/agentnotify/agentnotify_hook.py + <repo>/.muse/hooks.json
-Kilo Code    <repo>/.kilo/plugin/agentnotify.js
-OpenClaw     <repo>/.openclaw/agentnotify/agentnotify_openclaw.py
-Hermes Agent <repo>/.hermes/plugins/agentnotify/ (needs HERMES_ENABLE_PROJECT_PLUGINS=true)
-Pi           <repo>/.pi/extensions/agentnotify.ts (trusted projects only)
+OpenCode     <repo>/.opencode/plugins/nokoo.js
+Codex        <repo>/.codex/nokoo/nokoo_hook.py + <repo>/.codex/hooks.json
+Claude Code  <repo>/.claude/nokoo/nokoo_hook.py + <repo>/.claude/settings.json
+Gemini CLI   <repo>/.gemini/nokoo/nokoo_hook.py + <repo>/.gemini/settings.json
+Copilot CLI  <repo>/.github/hooks/nokoo.json + <repo>/.github/nokoo/nokoo_hook.py
+Cursor       <repo>/.cursor/nokoo/nokoo_hook.py + <repo>/.cursor/hooks.json
+Muse Code    <repo>/.muse/nokoo/nokoo_hook.py + <repo>/.muse/hooks.json
+Kilo Code    <repo>/.kilo/plugin/nokoo.js
+OpenClaw     <repo>/.openclaw/nokoo/nokoo_openclaw.py
+Hermes Agent <repo>/.hermes/plugins/nokoo/ (needs HERMES_ENABLE_PROJECT_PLUGINS=true)
+Pi           <repo>/.pi/extensions/nokoo.ts (trusted projects only)
 ```
 
 ## What each harness watches
@@ -140,16 +140,16 @@ Pi           <repo>/.pi/extensions/agentnotify.ts (trusted projects only)
 Permission notifications reuse one `--key` per project/session
 (`<project>-<session>-permission`) so repeat prompts update rather than
 pile up. Completion notifications carry no key. Resolve them from the CLI
-(`agentnotify resolve ID`) or the notification center when done; the skill
+(`nokoo resolve ID`) or the notification center when done; the skill
 describes the habit.
 
 Subagent child sessions are skipped for OpenCode idle/error noise unless
-`AGENTNOTIFY_INCLUDE_SUBAGENTS=1` is set. Override the CLI binary with
-`AGENTNOTIFY_BIN` when it is not on `PATH`.
+`NOKOO_INCLUDE_SUBAGENTS=1` is set. Override the CLI binary with
+`NOKOO_BIN` when it is not on `PATH`.
 
 ## Requirements
 
-- The `agentnotify` CLI on `PATH` (`agentnotify.exe` on Windows/WSL).
+- The `nokoo` CLI on `PATH` (`nokoo.exe` on Windows/WSL).
 - All hook-script harnesses (Codex, Claude, Gemini, Copilot, Cursor, Muse)
   need `python3` on `PATH` (the hook scripts use only the standard library).
   Copilot's PowerShell entries use `python`; on Windows, if only `python`
@@ -165,7 +165,7 @@ Subagent child sessions are skipped for OpenCode idle/error noise unless
   binary or `~/.gemini` layout moves, correct `HarnessCatalog` rather than
   adding a parallel list.
 - **Copilot CLI**: the `notification` event is fire-and-forget by design.
-  The installer writes one owned file (`hooks/agentnotify.json`); keep custom
+  The installer writes one owned file (`hooks/nokoo.json`); keep custom
   hooks in a separate `*.json` file in the same directory.
 - **Cursor**: user hooks (`~/.cursor/hooks.json`) do not run in cloud
   agents — only project hooks (`.cursor/hooks.json`) do. Install with
@@ -181,7 +181,7 @@ Subagent child sessions are skipped for OpenCode idle/error noise unless
   Legacy plugin dirs (`.kilocode/plugin`, `.opencode/plugin`) also load it —
   pass `--path` if you use one.
 - **OpenClaw**: no hooks to merge — run the watch daemon next to the gateway:
-  `python3 ~/.openclaw/agentnotify/agentnotify_openclaw.py watch` (systemd,
+  `python3 ~/.openclaw/nokoo/nokoo_openclaw.py watch` (systemd,
   launchd, or tmux). It polls `openclaw approvals pending --json`, opens one
   broker interaction per approval, notifies, waits for the human answer, and
   resolves via `openclaw approvals resolve`. Unsettled approvals stay pending.
@@ -190,12 +190,12 @@ Subagent child sessions are skipped for OpenCode idle/error noise unless
   is the portable v1.
 - **Hermes**: install, then two explicit consent steps in
   `~/.hermes/config.yaml` (printed by the installer): `plugins.enabled:
-  [agentnotify]` plus `security.approval.transport: agentnotify`. The
+  [nokoo]` plus `security.approval.transport: nokoo`. The
   transport **waits for and returns your answer** (this is a decision
   surface, not notify-only): transport errors raise and Hermes denies by
   default — a failure can never silently allow a command. Set
   `transport_fallback: builtin` to fall back to the ordinary prompt instead.
-- **Pi**: copy to `~/.pi/agent/extensions/agentnotify.ts` (or
+- **Pi**: copy to `~/.pi/agent/extensions/nokoo.ts` (or
   `.pi/extensions/` in a trusted project), then `/reload`. Uses only
   confirmed APIs (`agent_settled`, `ui_prompt_start/end`, `ctx.ui.notify`,
   `tool_call` shapes from the official examples). Blocking dialogs open a
@@ -206,9 +206,9 @@ Subagent child sessions are skipped for OpenCode idle/error noise unless
 
 ## Verify tomorrow (manual checklist)
 
-1. `agentnotify health` returns `ok`.
-2. `agentnotify install-harness opencode --dry-run` prints the destination;
-   without `--dry-run` it writes `agentnotify.js`. Restart OpenCode, run a
+1. `nokoo health` returns `ok`.
+2. `nokoo install-harness opencode --dry-run` prints the destination;
+   without `--dry-run` it writes `nokoo.js`. Restart OpenCode, run a
    task that asks a permission, and confirm a desktop notification appears.
 3. Same for `codex`: accept the trust prompt if Codex asks about the
    project `.codex` layer, trigger an approval, and confirm the
@@ -222,7 +222,7 @@ Subagent child sessions are skipped for OpenCode idle/error noise unless
    (`/reload`, then a blocking dialog → notification + auto-cancel on close),
    `hermes` (transport prompt after the two `config.yaml` steps), and
    `openclaw` (raise a test approval, answer from the CLI, watch it resolve).
-6. `agentnotify list --unresolved` shows the harness-sent rows; `resolve`
+6. `nokoo list --unresolved` shows the harness-sent rows; `resolve`
    clears them.
 7. Temporarily stop the broker and confirm the session still works (the
    harness must fail silently).
@@ -236,69 +236,69 @@ automated tests cover install/merge/idempotency only. Record results in
 Prefer the CLI, which handles absolute paths and JSON merging. To do it by
 hand:
 
-- OpenCode: copy `distribution/harness/opencode/agentnotify.js` to
-  `~/.config/opencode/plugins/agentnotify.js` (legacy singular
+- OpenCode: copy `distribution/harness/opencode/nokoo.js` to
+  `~/.config/opencode/plugins/nokoo.js` (legacy singular
   `~/.config/opencode/plugin/` also works on older builds) and restart.
-- Codex: copy `distribution/harness/shared/agentnotify_hook.py` to
-  `~/.codex/agentnotify/agentnotify_hook.py`, then merge
+- Codex: copy `distribution/harness/shared/nokoo_hook.py` to
+  `~/.codex/nokoo/nokoo_hook.py`, then merge
   `distribution/harness/codex/hooks.example.json` into `~/.codex/hooks.json`,
-  replacing `HOOK_DIR` with `~/.codex/agentnotify`.
+  replacing `HOOK_DIR` with `~/.codex/nokoo`.
 - Claude Code: copy the same script to
-  `~/.claude/agentnotify/agentnotify_hook.py`, then merge
+  `~/.claude/nokoo/nokoo_hook.py`, then merge
   `distribution/harness/claude/settings.example.json` into
   `~/.claude/settings.json`, replacing `HOOK_DIR` the same way.
 - Gemini CLI: copy the same script to
-  `~/.gemini/agentnotify/agentnotify_hook.py`, then merge
+  `~/.gemini/nokoo/nokoo_hook.py`, then merge
   `distribution/harness/gemini/settings.example.json` into
   `~/.gemini/settings.json`.
 - Copilot CLI: copy the same script to
-  `~/.copilot/agentnotify/agentnotify_hook.py`, then copy
-  `distribution/harness/copilot/agentnotify.example.json` to
-  `~/.copilot/hooks/agentnotify.json`, replacing `HOOK_DIR`.
+  `~/.copilot/nokoo/nokoo_hook.py`, then copy
+  `distribution/harness/copilot/nokoo.example.json` to
+  `~/.copilot/hooks/nokoo.json`, replacing `HOOK_DIR`.
 - Cursor: copy the same script to
-  `~/.cursor/agentnotify/agentnotify_hook.py`, then merge
+  `~/.cursor/nokoo/nokoo_hook.py`, then merge
   `distribution/harness/cursor/hooks.example.json` into
   `~/.cursor/hooks.json`.
 - Muse Code: copy the same script to
-  `~/.config/muse/agentnotify/agentnotify_hook.py`, then merge
+  `~/.config/muse/nokoo/nokoo_hook.py`, then merge
   `distribution/harness/muse/settings.example.json` into
   `~/.config/muse/settings.json` (keep `schema_version: 1`).
-- Kilo Code: copy `distribution/harness/opencode/agentnotify.js` to
-  `~/.config/kilo/plugin/agentnotify.js`, replacing the `opencode` agent id
+- Kilo Code: copy `distribution/harness/opencode/nokoo.js` to
+  `~/.config/kilo/plugin/nokoo.js`, replacing the `opencode` agent id
   and OpenCode titles with `kilo`/Kilo (the CLI does this for you).
-- OpenClaw: copy `distribution/harness/openclaw/agentnotify_openclaw.py` to
-  `~/.openclaw/agentnotify/` and run `python3 ... watch` under your process
+- OpenClaw: copy `distribution/harness/openclaw/nokoo_openclaw.py` to
+  `~/.openclaw/nokoo/` and run `python3 ... watch` under your process
   supervisor.
-- Hermes: copy `distribution/harness/hermes/agentnotify/` to
-  `~/.hermes/plugins/agentnotify/`, then apply the two `config.yaml` consent
+- Hermes: copy `distribution/harness/hermes/nokoo/` to
+  `~/.hermes/plugins/nokoo/`, then apply the two `config.yaml` consent
   steps above.
-- Pi: copy `distribution/harness/pi/agentnotify.ts` to
-  `~/.pi/agent/extensions/agentnotify.ts`, then `/reload` in Pi.
+- Pi: copy `distribution/harness/pi/nokoo.ts` to
+  `~/.pi/agent/extensions/nokoo.ts`, then `/reload` in Pi.
 
 ## Uninstall
 
-- OpenCode: delete `agentnotify.js` from the plugin directory.
-- Codex: delete the three AgentNotify blocks from `hooks.json` and remove
-  `~/.codex/agentnotify/`.
-- Claude Code: delete the two AgentNotify blocks from `settings.json` and
-  remove `~/.claude/agentnotify/`.
-- Gemini CLI: delete the three AgentNotify blocks from `settings.json` and
-  remove `~/.gemini/agentnotify/`.
-- Copilot CLI: delete `hooks/agentnotify.json` and remove
-  `~/.copilot/agentnotify/`.
-- Cursor: delete the two AgentNotify blocks from `hooks.json` and remove
-  `~/.cursor/agentnotify/`.
-- Muse Code: delete the two AgentNotify blocks from `settings.json` and
-  remove `~/.config/muse/agentnotify/`.
-- Kilo Code: delete `agentnotify.js` from the plugin directory.
-- OpenClaw: stop the watch daemon and remove `~/.openclaw/agentnotify/`.
-- Hermes: remove `~/.hermes/plugins/agentnotify/` and the two `config.yaml`
+- OpenCode: delete `nokoo.js` from the plugin directory.
+- Codex: delete the three Nokoo blocks from `hooks.json` and remove
+  `~/.codex/nokoo/`.
+- Claude Code: delete the two Nokoo blocks from `settings.json` and
+  remove `~/.claude/nokoo/`.
+- Gemini CLI: delete the three Nokoo blocks from `settings.json` and
+  remove `~/.gemini/nokoo/`.
+- Copilot CLI: delete `hooks/nokoo.json` and remove
+  `~/.copilot/nokoo/`.
+- Cursor: delete the two Nokoo blocks from `hooks.json` and remove
+  `~/.cursor/nokoo/`.
+- Muse Code: delete the two Nokoo blocks from `settings.json` and
+  remove `~/.config/muse/nokoo/`.
+- Kilo Code: delete `nokoo.js` from the plugin directory.
+- OpenClaw: stop the watch daemon and remove `~/.openclaw/nokoo/`.
+- Hermes: remove `~/.hermes/plugins/nokoo/` and the two `config.yaml`
   entries.
-- Pi: delete `agentnotify.ts` from the extensions directory and `/reload`.
+- Pi: delete `nokoo.ts` from the extensions directory and `/reload`.
 
 ## Compatibility contract
 
-- Hook entry points are versioned by the host, not by AgentNotify. When a
+- Hook entry points are versioned by the host, not by Nokoo. When a
   host renames an event (OpenCode has done so before: `session.idle` →
   `session.status`), the plugin handles both names; correct
   `HarnessCatalog`/`HarnessInstaller` rather than adding a parallel list.

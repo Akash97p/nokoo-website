@@ -13,7 +13,7 @@ export function SiteHeader() {
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <Image src={`${basePath}/an.png`} alt="" width={26} height={26} className="rounded-md" priority />
           <span className="flex items-baseline gap-2">
-            AgentNotify
+            Nokoo
             <span className="hidden text-xs font-normal text-muted-foreground xl:inline">agent control plane</span>
           </span>
         </Link>

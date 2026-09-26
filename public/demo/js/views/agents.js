@@ -98,7 +98,7 @@ export default {
         harness.ask_command ? codeLine(harness.ask_command) : null));
 
       mount(page, 
-        pageHead("Agents", "Connect coding agents to AgentNotify. The skill teaches an agent when to notify you; a harness makes the host itself report and, for some hosts, wait for your approval."),
+        pageHead("Agents", "Connect coding agents to Nokoo. The skill teaches an agent when to notify you; a harness makes the host itself report and, for some hosts, wait for your approval."),
         card({
           title: "Codex and Claude Code accounts",
           description: "Every account on this computer — the same list as Live quota and the model router, including second profiles such as ~/.claude-second. Each account notifies only once its own skill or harness is installed.",

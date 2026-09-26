@@ -51,7 +51,7 @@ export default function ArcPage() {
                 <Button asChild size="lg"><Link href="/docs/arc/">Read the specification <ArrowRight /></Link></Button>
                 <Button asChild size="lg" variant="outline"><a href={`${basePath}/schemas/arc-0.2.schema.json`}>JSON Schema</a></Button>
               </div>
-              <p className="mt-5 text-sm text-muted-foreground">AgentNotify defines ARC and is its first reference implementation. The contract does not depend on the product.</p>
+              <p className="mt-5 text-sm text-muted-foreground">Nokoo defines ARC and is its first reference implementation. The contract does not depend on the product.</p>
             </Reveal>
             <Reveal delay={0.15}>
               <ArcLifecycle />

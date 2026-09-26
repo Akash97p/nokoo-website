@@ -20,7 +20,7 @@ const hops = [
 
 const columns = [
   { id: "you", icon: Laptop, title: "Your computers" },
-  { id: "relay", icon: Cloud, title: "AgentNotify Relay" },
+  { id: "relay", icon: Cloud, title: "Nokoo Relay" },
   { id: "phone", icon: Smartphone, title: "Your phone" },
 ];
 

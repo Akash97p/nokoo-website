@@ -70,7 +70,7 @@ export function MenubarDemo() {
         {/* The native menu, as it is built: the headline balance, every monitored account with its
             windows in a submenu, then when it was checked and what you can do. */}
         <div className="absolute right-4 top-2 w-[min(262px,calc(100%-2rem))] rounded-xl border border-white/10 bg-zinc-900/85 p-1.5 text-[13px] text-white shadow-2xl backdrop-blur-2xl">
-          <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-white/55">AgentNotify quota</p>
+          <p className="px-2.5 pb-1 pt-1.5 text-xs font-semibold text-white/55">Nokoo quota</p>
           <p className="px-2.5 pb-2 text-xs text-white/55">Five-hour balance: {lowest.fiveHour}% · {lowest.label}</p>
           <div className="border-t border-white/10 py-1">
             {accounts.map((item, index) => (

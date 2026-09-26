@@ -17,7 +17,7 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent className="p-0">
         <SheetHeader className="border-b px-6 py-5 text-left">
-          <SheetTitle>AgentNotify</SheetTitle>
+          <SheetTitle>Nokoo</SheetTitle>
           <SheetDescription>{site.tagline}</SheetDescription>
         </SheetHeader>
         <nav className="grid gap-1 p-4" aria-label="Mobile navigation">

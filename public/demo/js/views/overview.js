@@ -381,7 +381,7 @@ export default {
       const { overview, usage, quota, router, ledger, feed } = data;
       if (!overview) {
         mount(page, pageHead("Overview", "The broker is not answering."),
-          notice("The AgentNotify broker is not responding. Is it still running?", "danger"));
+          notice("The Nokoo broker is not responding. Is it still running?", "danger"));
         return;
       }
 

@@ -83,7 +83,7 @@ export function ControlPlaneDiagram() {
         >
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <p className="font-semibold tracking-tight">AgentNotify</p>
+              <p className="font-semibold tracking-tight">Nokoo</p>
               <p className="text-xs text-muted-foreground">local control plane · 127.0.0.1</p>
             </div>
             <span className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] text-muted-foreground">

@@ -110,7 +110,7 @@ export async function renderRouter(page, ctx, section) {
 
     function drawStatus() {
       const enabledToggle = toggle(state.enabled ? "Router on" : "Router off", state.enabled,
-        { help: state.enabled ? "Agents you connect send their model requests through AgentNotify." : "Nothing is sent to any model provider until you turn it on." });
+        { help: state.enabled ? "Agents you connect send their model requests through Nokoo." : "Nothing is sent to any model provider until you turn it on." });
 
       const regen = button("Regenerate key", { size: "sm", iconName: "refresh" });
       regen.addEventListener("click", () => busy(regen, async () => {
@@ -296,7 +296,7 @@ export async function renderRouter(page, ctx, section) {
       const enabled = toggle("On", existing ? existing.enabled : true);
       const status = h("div", { class: "stack" });
 
-      // Where the key comes from. A key already known elsewhere in AgentNotify (API accounts) is
+      // Where the key comes from. A key already known elsewhere in Nokoo (API accounts) is
       // referenced, so it is entered and rotated in one place; OpenCode's is copied; one can be typed.
       const needsKeyUi = !subscription && (custom || preset?.needs_key || existing?.has_key || existing?.credential_ref);
       const apiAccounts = (state.accounts?.api_accounts || []).filter(a => preset && a.preset_id === preset.id);
@@ -326,7 +326,7 @@ export async function renderRouter(page, ctx, section) {
         const host = hostOf(baseUrl.value || preset?.base_url || "the base URL");
         keyHelp.textContent = source.startsWith("api_account:") || (source === "keep" && existing?.credential_ref)
           ? "Uses the key saved under Live quota → API accounts. Change it there and this provider follows."
-          : source === "opencode" ? `Copied from OpenCode into AgentNotify's encrypted store; sent only to ${host}.`
+          : source === "opencode" ? `Copied from OpenCode into Nokoo's encrypted store; sent only to ${host}.`
           : `Stored encrypted for your user and sent only to ${host}.`;
       };
       keySource.addEventListener("change", () => { syncKeySource(); if (keySource.value !== "paste") fetchModels(); });
@@ -513,7 +513,7 @@ export async function renderRouter(page, ctx, section) {
 
       const intro = [];
       if (preset?.unofficial)
-        intro.push(notice(`Unofficial. This reuses the sign-in ${auth === "codex_chatgpt" ? "Codex" : "Muse Code"} keeps on this computer; the plan does not document use from other apps, so use it at your own risk. AgentNotify stores no key for it.`, "warn"));
+        intro.push(notice(`Unofficial. This reuses the sign-in ${auth === "codex_chatgpt" ? "Codex" : "Muse Code"} keeps on this computer; the plan does not document use from other apps, so use it at your own risk. Nokoo stores no key for it.`, "warn"));
       if (auth === "codex_chatgpt")
         intro.push(signinNotice);
       else if (subscription)
@@ -553,8 +553,8 @@ export async function renderRouter(page, ctx, section) {
     function drawConnect() {
       const p = state.base_url || "http://127.0.0.1:PORT/router/v1";
       const anthBase = state.anthropic_base_url || "http://127.0.0.1:PORT/router";
-      const codexBlock = `model_provider = "agentnotify"\nmodel = "deepseek/deepseek-chat"\n\n[model_providers.agentnotify]\nname = "AgentNotify router"\nbase_url = "${p}"\nenv_key = "AGENTNOTIFY_ROUTER_KEY"\nwire_api = "responses"`;
-      const claudeBlock = `export ANTHROPIC_BASE_URL=${anthBase}\nexport ANTHROPIC_CUSTOM_HEADERS="x-agentnotify-router-key: $(agentnotify router key)"\nexport ANTHROPIC_MODEL=deepseek/deepseek-chat`;
+      const codexBlock = `model_provider = "nokoo"\nmodel = "deepseek/deepseek-chat"\n\n[model_providers.nokoo]\nname = "Nokoo router"\nbase_url = "${p}"\nenv_key = "NOKOO_ROUTER_KEY"\nwire_api = "responses"`;
+      const claudeBlock = `export ANTHROPIC_BASE_URL=${anthBase}\nexport ANTHROPIC_CUSTOM_HEADERS="x-nokoo-router-key: $(nokoo router key)"\nexport ANTHROPIC_MODEL=deepseek/deepseek-chat`;
 
       mount(connectHost,
         h("details", { class: "disclosure" },
@@ -565,7 +565,7 @@ export async function renderRouter(page, ctx, section) {
             copyBlock(codexBlock),
             h("h3", { class: "card-title", text: "Claude Code (environment)" }),
             copyBlock(claudeBlock),
-            h("p", { class: "muted small", text: "AGENTNOTIFY_ROUTER_KEY is the output of 'agentnotify router key'. Restart the agent after changing its configuration." }))),
+            h("p", { class: "muted small", text: "NOKOO_ROUTER_KEY is the output of 'nokoo router key'. Restart the agent after changing its configuration." }))),
       );
     }
 
@@ -799,81 +799,161 @@ export async function renderRouter(page, ctx, section) {
       ["standard", "Standard", "Everyday coding: a bug, a focused change, a review."],
       ["deep", "Deep", "Long-horizon work: migrations, multi-file refactors, design."],
     ];
+    const TIER_LABEL = { light: "Light", standard: "Standard", deep: "Deep", continuation: "Follow-up" };
+    const REASONS = {
+      classified: "decided",
+      follows_turn: "follows the turn",
+      continuation: "follow-up",
+      low_confidence: "unsure",
+      long_conversation: "long conversation",
+      agent_traffic: "agent traffic",
+      no_text: "no text",
+    };
 
-    // The demo's stand-in for the local heuristics: size, code, and the shape of the ask.
-    function classify(prompt) {
-      const text = prompt.trim().toLowerCase();
-      if (!text) return null;
-      const words = text.split(/\s+/).length;
-      const deep = /\b(migrat|refactor|architect|redesign|across (the|every)|end[- ]to[- ]end|every caller|whole|entire|long[- ]running|multi[- ]step|plan and implement|keep tests green)/;
-      const light = /^(hi|hey|hello|thanks|thank you|ok|yes|no)\b|how are you|commit message|what does .{1,30} mean|typo|rename this variable|summari[sz]e this line/;
-      if (deep.test(text) || words > 80 || /```[\s\S]{400,}/.test(prompt)) return ["deep", 0.9];
-      if (light.test(text) || (words <= 8 && !/```/.test(prompt))) return ["light", words <= 8 ? 0.96 : 0.9];
-      return ["standard", 0.78];
+    function tierBadge(tier) {
+      return badge(TIER_LABEL[tier] || tier, tier === "light" ? "ok" : tier === "deep" ? "info" : null);
+    }
+
+    // Anything a tier can name: provider models, routes, and Claude Code's own models.
+    function tierPicker(value) {
+      const el = h("select", { class: "select" }, h("option", { value: "", text: "Choose a model" }));
+      let found = !value;
+      const add = (label, options) => {
+        if (!options.length) return;
+        const group = h("optgroup", { label });
+        for (const option of options) {
+          if (option === value) found = true;
+          group.append(h("option", { value: option, text: option, selected: option === value }));
+        }
+        el.append(group);
+      };
+      for (const group of modelChoices()) add(group.label, group.options);
+      add("Routes", state.routes.filter(r => r.enabled).map(r => r.name));
+      add("Claude Code's own sign-in", state.adaptive?.native_models || []);
+      if (!found) el.append(h("option", { value, text: `${value} (not available)`, selected: true }));
+      return el;
     }
 
     function drawAdaptive() {
-      const cfg = state.adaptive || { enabled: false, engine: "heuristics", skip_agent_traffic: true, tiers: {}, recent: [] };
+      const cfg = state.adaptive || { enabled: false, engine: "sift", skip_agent_traffic: true, tiers: {}, recent: [], week: null };
       const enabled = toggle("Adaptive routing", cfg.enabled, {
-        help: "Chooses which model answers each request by how hard it is, before smart routing picks a provider for that model.",
+        help: "Chooses which model answers each request by how hard it is, before smart routing picks a provider for that model. It applies to requests for any model in the tiers below.",
       });
       const engine = select([
-        ["heuristics", "Local heuristics — decided on this computer"],
-        ["jev", "Jev by TypeSafe AI — coming soon"],
-      ], cfg.engine || "heuristics");
-      engine.querySelector('option[value="jev"]').disabled = true;
+        ["sift", "Sift — Nokoo's own model, on this computer"],
+        ["heuristics", "Heuristics — hand-built rules, on this computer"],
+        ["jev", "Jev by TypeSafe AI — your own key"],
+      ], cfg.engine || "sift");
+      const ENGINE_LABEL = { sift: "Sift", heuristics: "Heuristics", jev: "Jev" };
       const skipAgents = checkbox("Leave structured agent traffic alone", cfg.skip_agent_traffic, {
-        help: "Tool calls, subagents, and review models keep the model the agent asked for.",
+        help: "Requests that force a tool call or a JSON answer — an agent's own side calls — keep the model the agent asked for.",
       });
 
-      const modelOptions = modelChoices().flatMap(group => group.options);
+      // Jev's key: write-only. The page learns only whether one is stored.
+      const jevKey = input({ type: "password", autocomplete: "off", spellcheck: "false", placeholder: cfg.has_jev_key ? "Stored — paste a new key to replace it" : "Paste your TypeSafe API key" });
+      const clearKey = cfg.has_jev_key ? checkbox("Remove the stored key", false) : null;
+      const jevBox = h("div", { class: "stack" },
+        field("TypeSafe API key", jevKey, { help: "Stored encrypted on this computer, and only ever sent to api.typesafe.ai. With Jev chosen, the latest message you typed — up to 4,000 characters, never the conversation, files, or tools — goes to TypeSafe once per turn. If Jev is slow or refuses the key, Sift decides that request." }),
+        clearKey,
+        cfg.jev_error ? notice(`Last Jev problem: ${cfg.jev_error}`, "warn") : null);
+      const syncEngine = () => { jevBox.hidden = engine.value !== "jev" && !cfg.has_jev_key; };
+      engine.addEventListener("change", syncEngine);
+      syncEngine();
+
       const tierSelects = {};
       const tierRows = TIERS.map(([key, label, hint]) => {
-        const sel = h("select", { class: "select" });
-        for (const option of modelOptions) sel.append(h("option", { value: option, text: option, selected: option === cfg.tiers?.[key] }));
+        const sel = tierPicker(cfg.tiers?.[key] || "");
+        sel.addEventListener("change", renderVerdict);
         tierSelects[key] = sel;
         return h("tr", null,
           h("td", null, h("div", { class: "small", style: { fontWeight: "550" }, text: label }), h("div", { class: "muted small", text: hint })),
           h("td", { style: { minWidth: "220px" } }, sel));
       });
 
-      // Try-it preview: shows the tier the heuristics would pick, live, as you type.
+      // Try a prompt: Sift and the heuristics answer as you type, from the same code the router runs.
+      // Jev answers only on request, because every call spends your key.
       const tryInput = input({ placeholder: "Type a prompt, e.g. \"write a commit message\"" });
-      const verdict = h("div", { class: "row", style: { minHeight: "28px", flexWrap: "wrap", gap: "8px" } });
-      const renderVerdict = () => {
-        const result = classify(tryInput.value);
-        if (!result) { verdict.replaceChildren(h("span", { class: "muted small", text: "The tier and model appear here as you type." })); return; }
-        const [tier, confidence] = result;
-        const label = TIERS.find(t => t[0] === tier)[1];
-        verdict.replaceChildren(
-          badge(label, tier === "light" ? "ok" : tier === "deep" ? "info" : null),
-          h("span", { class: "mono small", text: `→ ${tierSelects[tier].value}` }),
-          h("span", { class: "muted small", text: `· ${Math.round(confidence * 100)}% confident` }));
+      const verdict = h("div", { class: "stack", style: { minHeight: "28px", gap: "6px" } });
+      let previewSeq = 0;
+      let jevAnswer = null;
+      const verdictRow = (name, answer) => {
+        if (!answer) return null;
+        if (answer.error) return h("div", { class: "row", style: { flexWrap: "wrap", gap: "8px" } },
+          h("span", { class: "muted small", text: `${name}:` }), h("span", { class: "small", text: answer.error }));
+        const model = answer.acts ? (tierSelects[answer.tier]?.value || "no model chosen") : null;
+        return h("div", { class: "row", style: { flexWrap: "wrap", gap: "8px" } },
+          h("span", { class: "muted small", style: { minWidth: "72px" }, text: `${name}:` }),
+          tierBadge(answer.tier),
+          model
+            ? h("span", { class: "mono small", text: `→ ${model}` })
+            : h("span", { class: "muted small", text: answer.tier === "continuation" ? "→ stays on the conversation's model" : "→ unsure, keeps the requested model" }),
+          h("span", { class: "muted small", text: `· ${Math.round(answer.probability * 100)}% confident` }));
       };
-      tryInput.addEventListener("input", renderVerdict);
+      const showVerdicts = (heuristics) => {
+        if (!tryInput.value.trim()) {
+          verdict.replaceChildren(h("span", { class: "muted small", text: "The tier and model appear here as you type." }));
+          return;
+        }
+        verdict.replaceChildren(...[verdictRow("Sift", lastSift), verdictRow("Heuristics", heuristics), verdictRow("Jev", jevAnswer)].filter(Boolean));
+      };
+      let lastHeuristics = null;
+      let lastSift = null;
+      let debounce = null;
+      function renderVerdict() {
+        clearTimeout(debounce);
+        debounce = setTimeout(async () => {
+          const seq = ++previewSeq;
+          const prompt = tryInput.value;
+          if (!prompt.trim()) { lastHeuristics = null; lastSift = null; showVerdicts(null); return; }
+          try {
+            const result = await api.post("router/adaptive/preview", { prompt });
+            if (seq !== previewSeq) return;
+            lastHeuristics = result.heuristics;
+            lastSift = result.sift;
+            showVerdicts(lastHeuristics);
+          } catch (error) {
+            if (seq === previewSeq) verdict.replaceChildren(notice(error.message, "danger"));
+          }
+        }, 150);
+      }
+      tryInput.addEventListener("input", () => { jevAnswer = null; renderVerdict(); });
+      const askJev = button("Ask Jev", { size: "sm", disabled: !cfg.has_jev_key, title: cfg.has_jev_key ? "Compare with Jev, using your key" : "Store your TypeSafe key to compare with Jev" });
+      askJev.addEventListener("click", () => busy(askJev, async () => {
+        if (!tryInput.value.trim()) return;
+        try {
+          const result = await api.post("router/adaptive/preview", { prompt: tryInput.value, ask_jev: true });
+          jevAnswer = result.jev;
+          lastHeuristics = result.heuristics;
+          lastSift = result.sift;
+          showVerdicts(lastHeuristics);
+        } catch (error) {
+          verdict.replaceChildren(notice(error.message, "danger"));
+        }
+      }));
       const examples = h("div", { class: "row", style: { flexWrap: "wrap", gap: "6px" } },
-        ["hi, how are you?", "write a commit message", "fix the null check in parseConfig", "migrate auth to the new session store across every service"].map(text =>
-          button(text, { size: "sm", variant: "ghost", onClick: () => { tryInput.value = text; renderVerdict(); } })));
-      renderVerdict();
+        ["hi, how are you?", "write a commit message", "fix the null check in parseConfig", "migrate auth to the new session store across every service", "ok, go ahead"].map(text =>
+          button(text, { size: "sm", variant: "ghost", onClick: () => { tryInput.value = text; jevAnswer = null; renderVerdict(); } })));
+      showVerdicts(null);
 
       const week = cfg.week;
-      const stats = week ? h("div", { class: "stats" },
-        stat("Tokens saved", `${week.tokens_saved_pct}%`, "this week, versus always using the requested model"),
-        stat("Light", String(week.light), "requests kept off the largest model"),
-        stat("Standard", String(week.standard), "requests"),
-        stat("Deep", String(week.deep), "requests moved up for long work"),
+      const stats = week && week.decisions ? h("div", { class: "stats" },
+        stat("Turns decided", String(week.decisions), "in the last 7 days"),
+        stat("Light", String(week.light), `turns · ${countRequests(week.moved_down)} kept off a larger model`),
+        stat("Standard", String(week.standard), "turns"),
+        stat("Deep", String(week.deep), `turns · ${countRequests(week.moved_up)} moved up for long work`),
       ) : null;
 
       const recent = (cfg.recent || []).length ? h("details", { class: "meta-disclosure", open: true },
-        h("summary", { text: `Recent decisions (${cfg.recent.length})` }),
+        h("summary", { text: `Recent decisions (${cfg.recent.length}) — kept in memory only, never written to disk` }),
         h("div", { class: "table-wrap" }, h("table", { class: "table" },
-          h("thead", null, h("tr", null, ["Prompt", "Asked for", "Tier", "Answered by", "Confidence"].map(t => h("th", { text: t })))),
+          h("thead", null, h("tr", null, ["Prompt", "Asked for", "Tier", "Answered by", "Confidence", "Why"].map(t => h("th", { text: t })))),
           h("tbody", null, cfg.recent.map(d => h("tr", null,
             h("td", { class: "small", text: d.prompt }),
-            h("td", { class: "mono small", text: d.requested }),
-            h("td", null, badge(TIERS.find(t => t[0] === d.tier)[1], d.tier === "light" ? "ok" : d.tier === "deep" ? "info" : null)),
+            h("td", { class: "mono small", text: d.requested || "" }),
+            h("td", null, tierBadge(d.tier)),
             h("td", { class: "mono small", text: d.chosen }),
-            h("td", { class: "small", text: `${Math.round(d.confidence * 100)}%` }))))))) : null;
+            h("td", { class: "small", text: d.confidence ? `${Math.round(d.confidence * 100)}% · ${d.engine}` : "" }),
+            h("td", { class: "muted small", text: REASONS[d.reason] || d.reason }))))))) : null;
 
       const status = h("div", { class: "stack" });
       const save = button("Save", { variant: "primary", size: "sm" });
@@ -883,11 +963,13 @@ export async function renderRouter(page, ctx, section) {
             enabled: enabled.input.checked,
             engine: engine.value,
             skip_agent_traffic: skipAgents.input.checked,
-            tiers: Object.fromEntries(Object.entries(tierSelects).map(([key, sel]) => [key, sel.value])),
+            tiers: Object.fromEntries(Object.entries(tierSelects).map(([key, sel]) => [key, sel.value || null])),
+            jev_key: jevKey.value.trim() || null,
+            clear_jev_key: !!clearKey?.input.checked,
           });
-          state.adaptive = { ...cfg, ...result };
-          toast(result.enabled ? "Adaptive routing is on." : "Adaptive routing is off.");
-          clear(status);
+          state.adaptive = result;
+          toast(result.enabled ? `Adaptive routing is on, decided by ${ENGINE_LABEL[result.engine] || result.engine}.` : "Adaptive routing is off.");
+          drawAdaptive();
         } catch (error) {
           status.replaceChildren(notice(error.message, "danger"));
         }
@@ -896,8 +978,8 @@ export async function renderRouter(page, ctx, section) {
       mount(adaptiveHost,
         card({
           title: "Adaptive routing",
-          description: "No more finding out six hours into a long task that it ran on the smallest model — and no more waking the largest one for \"hi\" or a commit message. Each request is matched to the model its difficulty needs.",
-          actions: [badge("Heuristics", "ok"), badge("Jev · coming soon", "info")],
+          description: "No more finding out six hours into a long task that it ran on the smallest model — and no more waking the largest one for \"hi\" or a commit message. Each turn is matched to the model its difficulty needs.",
+          actions: [cfg.enabled ? badge(ENGINE_LABEL[cfg.engine] || cfg.engine, "ok") : badge("Off")],
           body: [
             enabled,
             stats,
@@ -905,12 +987,13 @@ export async function renderRouter(page, ctx, section) {
               h("thead", null, h("tr", null, h("th", { text: "Tier" }), h("th", { text: "Model" }))),
               h("tbody", null, tierRows))),
             h("div", { class: "grid-2" },
-              field("Decision engine", engine, { help: "Heuristics run locally and send nothing anywhere. Jev, a decision model from TypeSafe AI, will be an opt-in upgrade using your own key." }),
+              field("Decision engine", engine, { help: "Sift, Nokoo's own model, and the heuristics run on this computer and send nothing anywhere. Jev is a separate TypeSafe AI service that needs your own key and sends your latest message to TypeSafe. If Jev cannot answer, Sift decides." }),
               h("div", { class: "field" }, skipAgents)),
+            jevBox,
             field("Try a prompt", tryInput),
-            examples,
+            h("div", { class: "row", style: { flexWrap: "wrap", gap: "6px" } }, examples, askJev),
             verdict,
-            h("p", { class: "muted small", text: "Low-confidence decisions keep the model you asked for. In internal tests adaptive routing cut token use by up to 20%." }),
+            h("p", { class: "muted small", text: `A turn is decided once, when you type; the agent's tool calls in that turn stay on the same model. Follow-ups like "ok, go ahead" and answers under ${Math.round((cfg.min_probability || 0.6) * 100)}% confidence keep the conversation's model, and a long conversation never moves to a smaller one, because re-reading its cached context there can cost more than it saves.` }),
             h("div", { class: "row" }, save),
             recent,
             status,
@@ -918,6 +1001,8 @@ export async function renderRouter(page, ctx, section) {
         }),
       );
     }
+
+    function countRequests(n) { return `${n} ${n === 1 ? "request" : "requests"}`; }
 
     function stat(label, value, sub) {
       return h("div", { class: "card stat" },
@@ -1217,7 +1302,7 @@ export async function renderRouter(page, ctx, section) {
         disconnect.addEventListener("click", () => busy(disconnect, async () => {
           const ok = await confirmDialog({
             title: `Disconnect ${agent.display_name}?`,
-            message: "Its own model settings are put back, and it stops routing through AgentNotify.",
+            message: "Its own model settings are put back, and it stops routing through Nokoo.",
             confirmLabel: "Disconnect",
           });
           if (!ok) return;
@@ -1261,7 +1346,7 @@ export async function renderRouter(page, ctx, section) {
         ? h("details", { class: "meta-disclosure" },
             h("summary", { text: `Saved copies of this file (${backups.length})` }),
             h("div", { class: "stack" },
-              h("p", { class: "muted small", text: "AgentNotify copies the file before every change it makes. Restoring writes one of those copies back." }),
+              h("p", { class: "muted small", text: "Nokoo copies the file before every change it makes. Restoring writes one of those copies back." }),
               backups))
         : null;
 

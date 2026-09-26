@@ -1,6 +1,6 @@
 # Bug log
 
-Defects found in AgentNotify after a capability was considered complete, with what actually caused
+Defects found in Nokoo after a capability was considered complete, with what actually caused
 them and how each was verified. This is a record for contributors: several of these were only
 reachable by running the product rather than by reading it or by unit tests, and the pattern is
 worth learning from.
@@ -50,7 +50,7 @@ message expiry. Telegram was simply the first provider configured with a real ac
 
 ### Fix
 
-`AgentNotify.Core.JsonConfigReader` reads optional values and treats absent, `null`, and
+`Nokoo.Core.JsonConfigReader` reads optional values and treats absent, `null`, and
 wrong-typed entries alike as "not set". All eight sites use it. `Provider_Selected` additionally
 catches anything a stored profile can throw and reports it in the status line, so no saved row can
 terminate the process again.
@@ -128,7 +128,7 @@ Three things combined, none of which is a thrown exception:
 
 On Unix, `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)` returns an **empty string**
 when the directory does not exist yet, which is the normal state of a fresh account. Combining that
-empty string produced the relative path `AgentNotify`, so the first run wrote `config.json` —
+empty string produced the relative path `Nokoo`, so the first run wrote `config.json` —
 containing the local bearer token — plus `secret.key` and the history database into whatever
 directory the broker happened to start in. On a developer machine that is the repository being
 worked on, where it could be committed.
@@ -138,7 +138,7 @@ worked on, where it could be committed.
 
 ---
 
-## `agentnotifyd` ignored SIGTERM
+## `nokood` ignored SIGTERM
 
 **Found:** 2026-08-12, by stopping the Linux broker. **Fixed in:** `feature/cross-platform-core`.
 **Severity:** high — the daemon could not be stopped normally.

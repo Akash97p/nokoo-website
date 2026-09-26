@@ -40,7 +40,7 @@ export default {
           toast_durations: toastDurations,
         });
         statusEl.replaceChildren(result.restart_required
-          ? notice(`Saved. Restart AgentNotify to move the local API to port ${result.settings.port}; agents keep using the old port until then.`, "warn")
+          ? notice(`Saved. Restart Nokoo to move the local API to port ${result.settings.port}; agents keep using the old port until then.`, "warn")
           : notice("Saved.", "ok", "check"));
         toast("Settings saved.");
       } catch (error) {

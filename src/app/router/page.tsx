@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 export const metadata: Metadata = {
   title: "Model router",
   description:
-    "The opt-in AgentNotify model router: adaptive routing by task difficulty, smart routing across providers, wire translation, aliases and fallback combos, agent connectors, and a redacted request ledger.",
+    "The opt-in Nokoo model router: adaptive routing by task difficulty, smart routing across providers, wire translation, aliases and fallback combos, agent connectors, and a redacted request ledger.",
 };
 
 const facts = [
@@ -48,7 +48,7 @@ export default function RouterPage() {
           <Reveal className="max-w-3xl">
             <Badge variant="secondary">Model router · Opt in</Badge>
             <h1 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">Change the model path, not the agent.</h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground">Codex, Claude Code, and any OpenAI-compatible client keep speaking their own wire format. Point them at the local AgentNotify router and it resolves a provider and model, translates when the wires differ, retries a cooling target, and records what happened — off until you switch it on.</p>
+            <p className="mt-6 text-lg leading-8 text-muted-foreground">Codex, Claude Code, and any OpenAI-compatible client keep speaking their own wire format. Point them at the local Nokoo router and it resolves a provider and model, translates when the wires differ, retries a cooling target, and records what happened — off until you switch it on.</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link href="/docs/router/">Read the router guide <ArrowRight /></Link></Button>
               <Button asChild size="lg" variant="outline"><Link href="/arc/">How attention requests work</Link></Button>
@@ -107,7 +107,7 @@ export default function RouterPage() {
           <Feature icon={Server} title="Loopback and off by default">The router listens on <code className="font-mono text-foreground">127.0.0.1</code> under its own key, separate from the notification API token. Nothing routes until you enable it.</Feature>
           <Feature icon={Workflow} title="Three wires, one decision">OpenAI Responses, OpenAI Chat Completions, and Anthropic Messages are accepted, translated only when needed, and passed through unchanged when the upstream already speaks the same format.</Feature>
           <Feature icon={GitBranch} title="Aliases, combos, failover">Address an upstream directly, use a nickname, or define an ordered combo. A target that fails, is cooling, or rejects the request hands it to the next eligible one — each gets its own rendering, so one provider&apos;s refusal does not end the chain. Requests that already streamed are never replayed blindly.</Feature>
-          <Feature icon={Route} title="Agent connectors">Generate a Codex model catalogue and provider block, or Claude Code model-picker rows with matching behaviour classes. AgentNotify copies the file before every write, and restore or disconnect puts your values back.</Feature>
+          <Feature icon={Route} title="Agent connectors">Generate a Codex model catalogue and provider block, or Claude Code model-picker rows with matching behaviour classes. Nokoo copies the file before every write, and restore or disconnect puts your values back.</Feature>
           <Feature icon={ScrollText} title="A ledger you can trust">One row per logical request with provider, model, attempts, status, and token counts when the upstream reports them. Prompts, responses, headers, keys, and provider error bodies are never stored.</Feature>
           <Feature icon={LockKeyhole} title="A separate spending boundary">Upstream keys are sealed with the same current-user encryption as delivery channels and are write-only in the interface. The router key cannot read notifications, and the notification token cannot route traffic.</Feature>
         </Stagger>

@@ -78,7 +78,7 @@ Implement each channel on its own `feature/channel-*` branch after F04–F06. Al
 | C17 | Twilio WhatsApp | Twilio Messages API + Content Templates | Adapter and Settings integration implemented with text-template attestation and consent/cost controls; real-account smoke and delivery status pending |
 | C18 | Signal | User-managed `signal-cli` process adapter | Experimental/unofficial; never imply official Signal support |
 | C19 | MQTT | MQTT 5 publish to configured TLS broker/topic | Adapter and Settings integration implemented with DNS pinning, platform trust/mTLS, fixed encrypted topic, and explicit QoS semantics; real-broker smoke pending |
-| C20 | AgentNotify Relay | Hosted HTTPS envelope API with per-device opaque transport | Adapter, browser/device-grant pairing, CLI pairing/status, encrypted credential storage, DNS pinning, and durable outbox implemented against the fixed hosted endpoint; owner Mac-to-phone notification and question-answer round trips verified. Independent crypto review, sealed response content, and delivery-status polling remain pending. |
+| C20 | Nokoo Relay | Hosted HTTPS envelope API with per-device opaque transport | Adapter, browser/device-grant pairing, CLI pairing/status, encrypted credential storage, DNS pinning, and durable outbox implemented against the fixed hosted endpoint; owner Mac-to-phone notification and question-answer round trips verified. Independent crypto review, sealed response content, and delivery-status polling remain pending. |
 | C21 | AWS SNS | Signed AWS API/SDK publish | Paused/not implemented; revisit only with explicit static credentials, no ambient credential-chain inheritance, fixed destination, cost controls, and a provider-specific retry review |
 | C22 | Azure Communication Services | Email/SMS provider SDK/API | Medium; connection credentials and cost controls required |
 | C23 | SendGrid | Mail Send API | High; useful when SMTP is unavailable |
@@ -168,7 +168,7 @@ Track live agent instances, projects, working directories, last activity, and wa
   untested because Muse Code is not installed on the test Mac.
 - Provider gallery, fetched model lists with tick boxes, reuse of OpenCode's keys, per-model wires for
   OpenCode Zen and Go, and the ChatGPT-plan and Muse Code subscription upstreams.
-- Remaining: a Muse Code sign-in kept in the OS keychain; AgentNotify's own sign-in flow for a plan
+- Remaining: a Muse Code sign-in kept in the OS keychain; Nokoo's own sign-in flow for a plan
   instead of reusing another tool's; non-streaming requests to the ChatGPT backend, which only
   streams.
 
@@ -188,31 +188,25 @@ Track live agent instances, projects, working directories, last activity, and wa
 
 ### R05 — Adaptive routing (prompt-to-model selection)
 
-Downshift easy prompts to a cheaper capable model before route resolution, and keep hard ones on the
-user's chosen model. Chosen over renaming the existing feature: "smart routing" already names
-same-model cross-provider failover (see `docs/ROUTER.md`), which routes around a broken or exhausted
-target; adaptive routing instead chooses *which model* serves the request by its difficulty, and the
-two compose (adaptive selection first, then smart-routing failover on the chosen model).
+Implemented on `feature/adaptive-routing`; see `docs/ROUTER.md` → Adaptive routing and
+`docs/VERIFICATION.md`. Both stages shipped together: local heuristics (a fitted feature model, not
+fixed rules) and Jev with the owner's own key, which falls back to the heuristics on any failure.
+Where it departs from the plan recorded here:
 
-- Stage 1 — local heuristics, no new dependency: token/character size, absence of code blocks and
-  tool/function-call structures, and short-message patterns select a cheap tier defined by the owner
-  on the Routing page. Must never apply to structured agent traffic by default (tool calls, subagent
-  and review models, `wire_api = "responses"` requests with tool definitions).
-- Stage 2 — BYOK decision model behind the same stage-1 interface: a web-UI toggle and encrypted key
-  field (existing provider-secret envelope path, like API accounts) for [Jev by TypeSafe AI](https://typesafe.ai),
-  an early-access, hosted, decision-only model that returns typed choices with calibrated
-  probabilities in tens to hundreds of milliseconds. Opt-in per user; off (and stage-1 heuristics
-  only) when no key is set.
-- Jev receives the prompt text, which sends user prompt content to a third party — document this in
-  ROUTER.md and SECURITY.md under the same consent framing as outbound channels. Never send: stored
-  credentials, notification history, or non-router traffic.
-- Confidence gate: downshift only on a calibrated high-probability decision; low confidence, a Jev
-  error or timeout, or the router being on a native Anthropic request falls through to the user's
-  chosen model untouched. A Jev outage must behave exactly as if adaptive routing were off.
-- Ledger every adaptive decision (source `heuristic`/`jev`, chosen vs. requested model) as redacted
-  rows beside the proxy ledger, and show the routing page which tier a request would get.
-- Loopback promise intact by default: no request leaves the machine unless Jev (or a later BYOK
-  decision model) is enabled with a key.
+- Structured agent traffic. Excluding every request with tool definitions would exclude all coding-
+  agent traffic. Instead a turn is decided when the person speaks, the tool loop follows that
+  decision, and only forced tool/JSON calls (with the setting on) and turns it never saw start keep
+  their model.
+- A native Claude Code request is routed like any other when its model is in a tier, as the demo
+  shows. Changing models between turns is what Claude Code's own `/model` does; within a turn it never
+  happens.
+- Decisions are ledgered as columns on the existing request row, not separate rows.
+
+Sift is now the default local engine. A small sentence encoder is a possible future improvement
+if the current classifier needs better results on new prompts.
+
+Remaining: recognising subagent and review requests as such; measuring token savings (what the
+requested model would have cost); a real agent session through it on a working provider.
 
 ## Product and platform tasks
 
@@ -246,4 +240,4 @@ two compose (adaptive selection first, then smart-routing failover on the chosen
 - Signed x64/ARM64 releases, checksums, schema migration recovery, automatic updates, and rollback.
 - Accessibility, keyboard navigation, localization, high-contrast support, multi-DPI/multi-monitor verification.
 - Native macOS quota menu bar is implemented; extend it into a full notification-center/settings client and add a Linux tray/desktop implementation.
-- Documentation/wiki site, examples, architecture decision records, contributor guides, and integration recipes. GitHub Pages is published by the repository workflow.
+- Documentation/wiki site, examples, architecture decision records, contributor guides, and integration recipes. The website is published from the separate `nokoo-website` repository.

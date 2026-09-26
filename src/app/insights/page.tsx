@@ -13,7 +13,7 @@ import { visuals } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Insights",
   description:
-    "The AgentNotify dashboard: unresolved attention, local usage and estimated cost, live Codex and Claude quota, and router health in one local page.",
+    "The Nokoo dashboard: unresolved attention, local usage and estimated cost, live Codex and Claude quota, and router health in one local page.",
 };
 
 export default function InsightsPage() {
@@ -31,7 +31,7 @@ export default function InsightsPage() {
             </div>
           </div>
           <div className="mt-14">
-            <ProductShot src={visuals.insightsDashboard} alt="The AgentNotify Insights dashboard showing unresolved attention requests, live quota cards, a 30-day usage chart, agent mix, and router health" caption="Overview: unresolved attention first, then usage, live quota, routing, and broker health. Values shown are illustrative." priority />
+            <ProductShot src={visuals.insightsDashboard} alt="The Nokoo Insights dashboard showing unresolved attention requests, live quota cards, a 30-day usage chart, agent mix, and router health" caption="Overview: unresolved attention first, then usage, live quota, routing, and broker health. Values shown are illustrative." priority />
           </div>
         </div>
       </section>
@@ -69,8 +69,8 @@ export default function InsightsPage() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground"><Terminal className="size-4" />terminal</div>
           </CardHeader>
           <CardContent className="relative p-5 font-mono text-[13px] leading-6 text-zinc-300">
-            <CopyCommand value={"agentnotify ui"} />
-            <pre className="overflow-x-auto"><code>{`$ agentnotify ui
+            <CopyCommand value={"nokoo ui"} />
+            <pre className="overflow-x-auto"><code>{`$ nokoo ui
 
 # opens http://127.0.0.1:8787/ui/overview
 #
@@ -99,9 +99,9 @@ export default function InsightsPage() {
               </div>
             </div>
             <div className="grid gap-3">
-              <Step index="1" title="Install AgentNotify">Windows setup, or the portable archive plus <code className="font-mono text-foreground">install.sh</code> on macOS and Linux.</Step>
+              <Step index="1" title="Install Nokoo">Windows setup, or the portable archive plus <code className="font-mono text-foreground">install.sh</code> on macOS and Linux.</Step>
               <Step index="2" title="Connect an agent">Give Codex or Claude Code the bundled skill, and optionally the auto-notify harness.</Step>
-              <Step index="3" title="Open Insights">Run <code className="font-mono text-foreground">agentnotify ui</code> and the overview opens with attention, usage, quota, and routing.</Step>
+              <Step index="3" title="Open Insights">Run <code className="font-mono text-foreground">nokoo ui</code> and the overview opens with attention, usage, quota, and routing.</Step>
             </div>
           </div>
         </div>

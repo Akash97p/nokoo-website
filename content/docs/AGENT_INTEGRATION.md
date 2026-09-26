@@ -1,18 +1,18 @@
 # Agent integration guide
 
-Prefer the installed `agentnotify.exe` CLI. It discovers the local port/token, produces correct JSON, handles errors, and keeps the broker as the lifecycle source of truth.
+Prefer the installed `nokoo.exe` CLI. It discovers the local port/token, produces correct JSON, handles errors, and keeps the broker as the lifecycle source of truth.
 
 ## Automatic harnesses (preferred)
 
-The skill below relies on the model remembering to call AgentNotify. The
+The skill below relies on the model remembering to call Nokoo. The
 harness removes the remembering: OpenCode, Codex, and Claude Code can notify
 automatically at permission prompts, questions, session completion, and
 session errors through their own hooks/plugin system:
 
 ```bash
-agentnotify install-harness opencode
-agentnotify install-harness codex
-agentnotify install-harness claude
+nokoo install-harness opencode
+nokoo install-harness codex
+nokoo install-harness claude
 ```
 
 Harnesses are notify-only — they never approve, deny, or block. Install both
@@ -23,18 +23,18 @@ the harness and the skill. See [HARNESS.md](HARNESS.md).
 Install the skill embedded in the CLI:
 
 ```bash
-agentnotify install-skill codex
-agentnotify install-skill claude
+nokoo install-skill codex
+nokoo install-skill claude
 ```
 
 For a repository-local installation:
 
 ```bash
-agentnotify install-skill codex --scope project
+nokoo install-skill codex --scope project
 ```
 
 The tray's Copy/Download actions remain available. The canonical source is
-`distribution/agentnotify/SKILL.md`; see [AGENT_SKILLS.md](AGENT_SKILLS.md) for paths, overwrite
+`distribution/nokoo/SKILL.md`; see [AGENT_SKILLS.md](AGENT_SKILLS.md) for paths, overwrite
 protection, WSL behavior, and manual installation.
 
 ## Availability check
@@ -42,15 +42,15 @@ protection, WSL behavior, and manual installation.
 An agent may check once near task start:
 
 ```bash
-agentnotify.exe health
+nokoo.exe health
 ```
 
-If AgentNotify is unavailable, continue useful work and report the notification failure only when relevant. Do not loop or block the user’s task trying to restore the broker.
+If Nokoo is unavailable, continue useful work and report the notification failure only when relevant. Do not loop or block the user’s task trying to restore the broker.
 
 ## Attention request
 
 ```bash
-agentnotify.exe send \
+nokoo.exe send \
   --agent codex \
   --agent-instance codex-71dc \
   --project payments \
@@ -64,18 +64,18 @@ agentnotify.exe send \
 Capture the returned `id`. When the condition is answered or otherwise clears:
 
 ```bash
-agentnotify.exe resolve NOTIFICATION_ID
+nokoo.exe resolve NOTIFICATION_ID
 ```
 
 ## Completion, blocker, and permission examples
 
 ```bash
-agentnotify.exe send --agent codex --project payments \
+nokoo.exe send --agent codex --project payments \
   --type completed --title "Task complete" --message "Implementation is complete and the test suite passes."
 
 
 
-agentnotify.exe send --agent codex --project payments \
+nokoo.exe send --agent codex --project payments \
   --type permission_required --priority high --key payments-production-approval \
   --title "Approval required" --message "May I deploy this build to production?"
 ```
@@ -100,18 +100,18 @@ Sticky attention types are shown until dismissed/resolved. Timed types transitio
 Use a stable key per logical unresolved condition:
 
 ```bash
-agentnotify.exe send --key build-main --type error --title "Build failed" --message "12 errors"
-agentnotify.exe send --key build-main --type warning --title "Build improving" --message "2 errors remain"
+nokoo.exe send --key build-main --type error --title "Build failed" --message "12 errors"
+nokoo.exe send --key build-main --type warning --title "Build improving" --message "2 errors remain"
 ```
 
 The second request updates the active notification. Once dismissed/resolved, reusing the key creates a new lifecycle.
 
 ## WSL
 
-The Windows installer adds `agentnotify.exe` to the Windows user `PATH`. Open a new WSL shell after installation so WSL imports that change, then call the executable directly:
+The Windows installer adds `nokoo.exe` to the Windows user `PATH`. Open a new WSL shell after installation so WSL imports that change, then call the executable directly:
 
 ```bash
-agentnotify.exe send --type info --title "From WSL" --message "The agent can reach Windows."
+nokoo.exe send --type info --title "From WSL" --message "The agent can reach Windows."
 ```
 
 For repository development:
@@ -119,10 +119,10 @@ For repository development:
 ```bash
 ./scripts/package.sh
 ./scripts/install-wsl-wrapper.sh
-agentnotify health
+nokoo health
 ```
 
-The wrapper first uses `agentnotify.exe` from PATH, then the local packaged payload. It does not read or print the token.
+The wrapper first uses `nokoo.exe` from PATH, then the local packaged payload. It does not read or print the token.
 
 ## Direct HTTP fallback
 
@@ -137,5 +137,5 @@ Protocol/A2A, is in
 ## Prompt snippet
 
 ```text
-Use AgentNotify at meaningful attention boundaries. Notify before waiting for required input or permission, after exhausting safe alternatives when blocked, and on completion of long-running work. Use a stable key for one unresolved condition, capture the returned ID, and resolve it when the condition clears. Do not notify for routine progress.
+Use Nokoo at meaningful attention boundaries. Notify before waiting for required input or permission, after exhausting safe alternatives when blocked, and on completion of long-running work. Use a stable key for one unresolved condition, capture the returned ID, and resolve it when the condition clears. Do not notify for routine progress.
 ```

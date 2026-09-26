@@ -21,7 +21,7 @@ const cost = (usd, complete = true) => ({ priced_usd: usd, complete, unpriced_ev
 
 // ---- notifications ---------------------------------------------------------------------------
 
-const projects = ["checkout-service", "agent-notify", "mobile-client", "infra-terraform", "docs-site"];
+const projects = ["checkout-service", "nokoo", "mobile-client", "infra-terraform", "docs-site"];
 const agentsList = ["claude", "codex", "opencode"];
 
 const seedNotifications = [
@@ -71,8 +71,8 @@ const seedNotifications = [
     id: "n-7", type: "completed", priority: "low", status: "dismissed",
     title: "Dependency bump merged",
     message: "23 packages updated, lockfile regenerated, no audit advisories.",
-    agent: "opencode", agent_instance: "oc-88d2", project: "agent-notify",
-    cwd: "~/work/agent-notify", created_at: iso(26 * 3_600_000), resolved_at: iso(25 * 3_600_000),
+    agent: "opencode", agent_instance: "oc-88d2", project: "nokoo",
+    cwd: "~/work/nokoo", created_at: iso(26 * 3_600_000), resolved_at: iso(25 * 3_600_000),
   },
 ];
 
@@ -153,7 +153,7 @@ const interactions = [
 
 const providerKinds = [
   {
-    kind: "relay", display_name: "AgentNotify Relay", category: "Phone", summary: "Push to the AgentNotify app on your phone.",
+    kind: "relay", display_name: "Nokoo Relay", category: "Phone", summary: "Push to the Nokoo app on your phone.",
     supports_pairing: true, paid: false,
     fields: [
       { key: "sender_name", label: "This computer's name", type: "text", required: true, default: "Studio", help: "Shown on the phone so you can tell your machines apart." },
@@ -289,33 +289,33 @@ const agents = {
     {
       id: "acc-claude-personal", kind: "claude_code", display_name: "Claude Code", label: "Personal",
       directory: "~/.claude", display_directory: "~/.claude",
-      skill: { id: "claude", state: "up_to_date", destination: "~/.claude/skills/agentnotify", shared: false },
-      harness: { installed: true, command: "agentnotify harness claude --ask", ask_command: "agentnotify harness claude --ask" },
+      skill: { id: "claude", state: "up_to_date", destination: "~/.claude/skills/nokoo", shared: false },
+      harness: { installed: true, command: "nokoo harness claude --ask", ask_command: "nokoo harness claude --ask" },
     },
     {
       id: "acc-claude-work", kind: "claude_code", display_name: "Claude Code", label: "Work",
       directory: "~/.claude-work", display_directory: "~/.claude-work",
-      skill: { id: "claude-work", state: "outdated", destination: "~/.claude-work/skills/agentnotify", shared: false },
-      harness: { installed: false, command: "CLAUDE_CONFIG_DIR=~/.claude-work agentnotify harness claude --ask", ask_command: "CLAUDE_CONFIG_DIR=~/.claude-work agentnotify harness claude --ask" },
+      skill: { id: "claude-work", state: "outdated", destination: "~/.claude-work/skills/nokoo", shared: false },
+      harness: { installed: false, command: "CLAUDE_CONFIG_DIR=~/.claude-work nokoo harness claude --ask", ask_command: "CLAUDE_CONFIG_DIR=~/.claude-work nokoo harness claude --ask" },
     },
     {
       id: "acc-codex-personal", kind: "codex", display_name: "Codex", label: "Personal",
       directory: "~/.codex", display_directory: "~/.codex",
-      skill: { id: "codex", state: "up_to_date", destination: "~/.agents/skills/agentnotify", shared: true },
-      harness: { installed: true, command: "agentnotify harness codex --ask", ask_command: "agentnotify harness codex --ask" },
+      skill: { id: "codex", state: "up_to_date", destination: "~/.agents/skills/nokoo", shared: true },
+      harness: { installed: true, command: "nokoo harness codex --ask", ask_command: "nokoo harness codex --ask" },
     },
   ],
   skills: [
-    { id: "opencode", display_name: "OpenCode", state: "up_to_date", note: "Installed in the personal skills folder.", destination: "~/.config/opencode/skills/agentnotify", environment: null, wsl: null },
-    { id: "gemini", display_name: "Gemini CLI", state: "not_installed", note: "Not installed yet. One click writes the skill file.", destination: "~/.gemini/skills/agentnotify", environment: null, wsl: null },
-    { id: "kilo", display_name: "Kilo", state: "outdated", note: "An older copy of the skill is installed.", destination: "~/.kilo/skills/agentnotify", environment: null, wsl: null },
+    { id: "opencode", display_name: "OpenCode", state: "up_to_date", note: "Installed in the personal skills folder.", destination: "~/.config/opencode/skills/nokoo", environment: null, wsl: null },
+    { id: "gemini", display_name: "Gemini CLI", state: "not_installed", note: "Not installed yet. One click writes the skill file.", destination: "~/.gemini/skills/nokoo", environment: null, wsl: null },
+    { id: "kilo", display_name: "Kilo", state: "outdated", note: "An older copy of the skill is installed.", destination: "~/.kilo/skills/nokoo", environment: null, wsl: null },
     { id: "muse", display_name: "Muse Code", state: "unavailable", note: "No home folder was found for this agent.", destination: null, environment: null, wsl: null },
   ],
   harnesses: [
-    { id: "aider", display_name: "Aider", note: "Reports completions and errors from the host itself.", command: "agentnotify harness aider", ask_command: null },
-    { id: "opencode", display_name: "OpenCode", note: "Reports completions and can wait for your approval.", command: "agentnotify harness opencode --ask", ask_command: "agentnotify harness opencode --ask" },
-    { id: "gemini", display_name: "Gemini CLI", note: "Reports completions and errors.", command: "agentnotify harness gemini", ask_command: null },
-    { id: "kilo", display_name: "Kilo", note: "Reports completions and errors.", command: "agentnotify harness kilo", ask_command: null },
+    { id: "aider", display_name: "Aider", note: "Reports completions and errors from the host itself.", command: "nokoo harness aider", ask_command: null },
+    { id: "opencode", display_name: "OpenCode", note: "Reports completions and can wait for your approval.", command: "nokoo harness opencode --ask", ask_command: "nokoo harness opencode --ask" },
+    { id: "gemini", display_name: "Gemini CLI", note: "Reports completions and errors.", command: "nokoo harness gemini", ask_command: null },
+    { id: "kilo", display_name: "Kilo", note: "Reports completions and errors.", command: "nokoo harness kilo", ask_command: null },
   ],
 };
 
@@ -383,7 +383,7 @@ const usageSources = [
 
 const usageProjects = [
   { id: "prj-checkout-9f21", name: "checkout-service", fraction: 0.41, models: usageModels.slice(0, 4) },
-  { id: "prj-agentnotify-4c08", name: "agent-notify", fraction: 0.27, models: usageModels.slice(0, 3) },
+  { id: "prj-nokoo-4c08", name: "nokoo", fraction: 0.27, models: usageModels.slice(0, 3) },
   { id: "prj-mobile-2b77", name: "mobile-client", fraction: 0.16, models: usageModels.slice(2, 6) },
   { id: "prj-infra-8ad3", name: "infra-terraform", fraction: 0.1, models: usageModels.slice(4, 8) },
   { id: "prj-docs-1e50", name: "docs-site", fraction: 0.06, models: usageModels.slice(5, 9) },
@@ -742,7 +742,7 @@ const overview = {
   version: "0.2.0-alpha.3",
   platform: "macOS",
   desktop_surface: "Notification Center",
-  data_directory: "~/Library/Application Support/AgentNotify",
+  data_directory: "~/Library/Application Support/Nokoo",
   api_url: "http://127.0.0.1:8765",
   secret_protection: "macOS login keychain",
   uptime_seconds: 41 * 3_600,
