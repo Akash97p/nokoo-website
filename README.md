@@ -31,9 +31,10 @@ A new guide also needs an entry in `src/lib/docs.ts` to appear in navigation.
 
 Vercel with the Next.js preset (Node 24). Optional environment variables:
 
-- `NEXT_PUBLIC_RELAY_URL` — the hosted relay the pricing page links to (default `https://relay.nokoo.ai`);
+- `NEXT_PUBLIC_RELAY_URL` — the hosted relay the pricing page links to (default `https://an.relay.dev.kabanitech.com`);
 - `NEXT_PUBLIC_BASE_PATH` — only when serving under a sub-path.
 
 ## Licence
 
 Proprietary. © 2026 Kabani Tech Private Limited. All rights reserved.
+nokoo.ai is developed by Kabani Tech Private Limited.

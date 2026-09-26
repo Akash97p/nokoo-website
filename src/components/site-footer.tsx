@@ -8,7 +8,7 @@ export function SiteFooter() {
     <footer className="mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6">
       <Separator />
       <div className="flex flex-col gap-4 pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <p>Nokoo — the agent control plane · © 2026 Kabani Tech Private Limited</p>
+        <p>nokoo.ai is developed by <a href="https://kabanitech.com" className="underline underline-offset-4 hover:text-foreground">Kabani Tech Private Limited</a> · © 2026</p>
         <nav className="flex flex-wrap gap-5" aria-label="Footer navigation">
           <Link href={docsEntry}>Docs</Link>
           <Link href="/insights/">Insights</Link>
