@@ -397,7 +397,7 @@ Installed filenames deliberately differ on case-insensitive Windows filesystems:
 
 ## Persistence
 
-SQLite contains one `notifications` table and indexes for status, key, and creation time. Each repository operation opens a short-lived pooled connection. UI code never issues SQL directly.
+SQLite contains one `notifications` table and indexes for status, key, and creation time. `artifacts_json` holds the files a notification carries for the phone; histories created before it existed gain the column in place on start, with every earlier row simply having none. Each repository operation opens a short-lived pooled connection. UI code never issues SQL directly.
 
 Active attention rows survive restart. Resolved/dismissed rows older than `historyRetentionDays` are pruned. Malformed config falls back to safe defaults and is rewritten at app startup.
 
@@ -461,6 +461,14 @@ them changes the product rather than the implementation.
     from account Live quota — the three are never summed. Its agent connectors are the only code that
     writes another program's configuration, and only when the owner presses a button or runs a
     command; every such write is preceded by a restorable copy.
+
+12. Files for the phone (artifacts) never pass through the broker. The broker reserves one on Nokoo
+    Relay with its installation credential and returns the relay's signed upload URL, but only after
+    checking that the URL is on the configured relay; the CLI, which has the file on its own
+    filesystem, streams the bytes there. A notification names its files with the relay's own record
+    — id, name, size, SHA-256 — and only Relay routes carry them, because only a phone paired to that
+    relay can download them. Artifacts are not end-to-end encrypted; their digest is, inside the
+    sealed payload.
 
 ## Adding a new outbound adapter
 

@@ -102,6 +102,11 @@ sent in the clear.
 > they are authenticated, then revalidated by the broker for digest, nonce, expiry, and first-wins
 > state. Sealing answers to the installation key remains future work.
 
+**Files are not sealed.** An agent can hand the phone a file with `nokoo artifacts upload` — a
+build to install, a report to read. The relay stores those bytes as uploaded for up to a week, and
+its operator can read them; only the file's SHA-256 travels sealed in the notification. Never let
+an agent upload anything secret. See [CLI](CLI.md#artifacts--hand-a-file-to-the-users-phone).
+
 Per-route, the **Include notification message off-device** switch controls whether the message body
 leaves the machine at all. Leave it off for routes carrying anything you would not want stored
 outside your computer, regardless of transport.

@@ -2702,3 +2702,30 @@ SDK): full suite **1318/1318**, `scripts/check-webui.sh` clean, and
 **Not verified.** The WPF tray app, the installer, and `scripts/package.sh` were not built — they need
 Windows. No installed copy was upgraded: an existing install keeps its old data folder, CLI name,
 startup entry, and harness hooks until it is reinstalled and the hooks are installed again.
+
+## Files for the phone (2026-09-27)
+
+**What changed.** `nokoo artifacts upload|get|delete`, `send --artifact`, `/v1/artifacts` on the
+broker, `artifacts` on notifications (stored in `artifacts_json`, added to Relay payloads only), and
+the skill section agents follow. The relay side is `docs/ARTIFACTS.md` in the relay repository.
+
+**Verified on macOS.** Full suite through `scripts/test.sh`: **1339/1339**,
+including 21 new cases in `ArtifactTests`: validation, the in-place `artifacts_json` column on an
+older history, Relay-only payloads through the coordinator, the broker's relay calls against a stub
+(snake-case body, bearer, off-relay upload URL refused, relay refusals passed through), WSL path
+mapping, and the CLI's streamed PUT. `scripts/check-webui.sh` clean; skill validated.
+
+End to end on this Mac, with every piece real: the relay from the relay repository on SQLite with
+SeaweedFS 4.47 as storage, this branch's `nokood` paired to it through `nokoo relay pair` and a
+console approval, and the relay's `scripts/dummy-device.ts` paired as the phone.
+`nokoo artifacts upload app-release.apk --title …` hashed a 20 MiB file, reserved it, streamed it
+through the relay into SeaweedFS (`ready`), and sent the notification; the dispatcher sealed it to
+the dummy phone, which decrypted a payload whose `artifacts` named the file with its SHA-256. The
+phone's link request returned a signed URL; the downloaded file's SHA-256 matched the original, a
+`Range` request returned `206`, and a forged token `403`. `artifacts get`, `send --artifact`, and
+`artifacts delete` worked against the same stack.
+
+**Not verified.** The Windows tray app and installer were not built. The WSL path mapping is unit
+tested only. No real phone downloaded a file; the mobile app's Download button is covered by its own
+tests. Downloads are served with chunked encoding (a Bun limitation, see the relay's
+`ARTIFACTS.md`), so a download manager learns the size only from `HEAD`.
