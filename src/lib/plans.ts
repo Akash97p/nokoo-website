@@ -69,10 +69,10 @@ export const PLANS: Plan[] = [
       "Answer agents from your phone (interactive responses)",
       "Up to 3 mobile devices",
       "Up to 5 senders",
+      "5 GB of file storage for agents — builds and assets to your phone",
       "30-day delivery history",
     ],
     planned: [
-      "Shared agent storage (S3-compatible buckets)",
       "Agent-to-agent relay across machines",
       "Priority delivery queue",
     ],
@@ -88,6 +88,7 @@ export const PLANS: Plan[] = [
       "Everything in Standard",
       "Unlimited mobile devices",
       "Unlimited senders",
+      "50 GB of file storage for agents",
       "Priority support",
     ],
     planned: ["Custom retention", "Team seats", "Dedicated relay option"],
@@ -122,10 +123,10 @@ export const COMPARISON: ComparisonRow[] = [
   },
   {
     key: "storage",
-    label: "Shared agent storage",
+    label: "File storage for agents",
     basic: "—",
-    standard: "Planned",
-    pro: "Planned",
+    standard: "5 GB",
+    pro: "50 GB",
   },
   {
     key: "a2a",

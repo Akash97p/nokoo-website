@@ -42,11 +42,22 @@ export function notificationItem(n, { onChanged, customTypes = [] } = {}) {
       h("time", { class: "small muted", datetime: n.created_at, title: fullTime(n.created_at), text: timeAgo(n.created_at) })),
     h("h3", { class: "item-title", text: n.title }),
     n.message ? h("p", { class: "item-message", text: n.message }) : null,
+    // Files travel to the phone through Relay only; here they are named, never offered.
+    n.artifacts?.length ? h("div", { class: "item-meta" }, ...n.artifacts.map((a) =>
+      h("span", { title: `sha256 ${a.sha256}`, text: `File for your phone: ${a.name} (${formatSize(a.size_bytes)})` }))) : null,
     h("div", { class: "item-meta" },
       n.agent ? h("span", { text: `Agent: ${n.agent}${n.agent_instance ? ` (${n.agent_instance})` : ""}` }) : null,
       n.project ? h("span", { text: `Project: ${n.project}` }) : null,
       n.cwd ? h("span", { class: "mono truncate meta-path", title: n.cwd, text: n.cwd }) : null),
     active ? h("div", { class: "item-actions" }, act("resolve", "Resolve", "primary"), act("dismiss", "Dismiss")) : null);
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024, unit = 0;
+  while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
 }
 
 export default {

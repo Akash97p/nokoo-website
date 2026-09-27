@@ -19,7 +19,7 @@ export default {
             h("dt", { text: "Data folder" }), h("dd", { class: "mono small", text: o.data_directory }),
             h("dt", { text: "Local API" }), h("dd", { class: "mono small", text: o.api_url }),
             h("dt", { text: "Licence" }), h("dd", { text: "Proprietary. Provided as is, without warranty of any kind." }),
-            h("dt", { text: "Publisher" }), h("dd", { text: "Kabani Tech Private Limited. Author Akash P." })),
+            h("dt", { text: "Developer" }), h("dd", { text: "nokoo.ai is developed by Kabani Tech Private Limited. Author Akash P." })),
         ],
       }),
       h("div", { class: "grid-2" },
@@ -35,7 +35,8 @@ export default {
           title: "Links",
           body: h("div", { class: "stack" },
             link("https://nokoo.ai/", "Website"),
-            link("https://nokoo.ai/docs/", "Documentation")),
+            link("https://nokoo.ai/docs/", "Documentation"),
+            link("https://kabanitech.com/", "Kabani Tech Private Limited")),
         })));
   },
 };

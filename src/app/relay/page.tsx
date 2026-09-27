@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, MessageSquareReply, QrCode, ScanLine, ServerOff, ShieldAlert, Smartphone } from "lucide-react";
+import { ArrowRight, FileDown, MessageSquareReply, QrCode, ScanLine, ServerOff, ShieldAlert, Smartphone } from "lucide-react";
 
 import { RelayPath } from "@/components/relay-path";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
@@ -20,6 +20,7 @@ const steps = [
   { icon: QrCode, title: "Scan once per phone", body: "The QR code is a short-lived, single-use challenge, not a credential. The phone's device credential is minted only when it presents that challenge." },
   { icon: Smartphone, title: "Every paired computer can reach it", body: "A phone belongs to your relay account rather than to one machine, so a second laptop needs no second scan." },
   { icon: MessageSquareReply, title: "Answer from the phone", body: "A permission, a choice, or a short text goes back through the relay; the running broker picks it up and returns it to the waiting host adapter." },
+  { icon: FileDown, title: "Get the build on your phone", body: "An agent that builds an Android app can hand you the APK: it uploads the file to the relay and the notification carries a Download button. Files are kept for up to a week and are not end-to-end encrypted — their checksum is. Included from the Standard plan." },
 ];
 
 export default function RelayPage() {

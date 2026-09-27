@@ -60,6 +60,35 @@ Validation failures return `400` with `{ "error": "<message>" }`.
 
 **Response** `201` → `NotificationDto`; on dedup the same `id` is returned with updated `updatedAt`.
 
+### `POST /v1/artifacts`
+
+Reserves a file on the connected Nokoo Relay for the user's phones. Body:
+
+```json
+{ "name": "app-release.apk", "sizeBytes": 48213344, "sha256": "<64 lowercase hex>",
+  "contentType": "application/vnd.android.package-archive", "expiresInHours": 24 }
+```
+
+`contentType` and `expiresInHours` are optional. `201` returns
+`{ "artifact": { "id", "name", "sizeBytes", "contentType", "sha256", "status": "pending", … },
+"uploadUrl", "uploadExpiresAt" }`. PUT the file to `uploadUrl` with `Content-Length` set; it needs
+no credential and must be on the configured relay, which the broker checks before answering. Errors
+use the usual `{ "error" }` shape: `409` when Relay is not connected, and the relay's own message
+for its refusals (`402` when the plan includes no storage or it is used up, `413` over the size
+limit, `503` when the relay stores no files).
+
+### `GET /v1/artifacts/{id}` and `DELETE /v1/artifacts/{id}`
+
+The artifact's state as the relay reports it (`status` becomes `ready` once the upload matched its
+size and digest), or delete it. Both go to the relay with the installation credential.
+
+### Artifacts on notifications
+
+`POST /v1/notifications` accepts `artifacts`: up to ten references
+`{ "id", "name", "sizeBytes", "contentType", "sha256", "expiresAt" }`, normally the `artifact` object
+from the calls above. They are stored with the notification, returned in its DTO, and added to the
+sealed payload of **Relay routes only**.
+
 ### `POST /v1/events`
 
 Accepts ARC 0.2 `request.created`, `request.updated`, `response.submitted`, and `request.resolved`

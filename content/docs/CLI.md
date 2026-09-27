@@ -485,6 +485,33 @@ enabled Relay provider into the broker; the running broker already polls
 continuously, so this command is for diagnostics or a manual catch-up. See
 [RELAY_INTERACTIONS.md](RELAY_INTERACTIONS.md).
 
+### `artifacts` — hand a file to the user's phone
+
+```text
+nokoo artifacts upload <file> [--title T] [--message M] [--name N] [--content-type T]
+                             [--expires-hours N] [--type T] [--priority P] [--agent A]
+                             [--agent-instance I] [--project P] [--key K] [--quiet]
+nokoo artifacts get <id>
+nokoo artifacts delete <id>
+```
+
+`upload` hashes the file, reserves it on the connected Nokoo Relay through the broker, and streams it
+to the signed upload URL the relay returns, with progress on stderr. With `--title` or `--message` it
+then sends a notification carrying the file (type `completed` unless `--type` says otherwise); the
+phone shows a Download button, and no other channel receives the file. Output is JSON:
+
+```json
+{ "artifact": { "id": "art_…", "name": "app-release.apk", "sizeBytes": 48213344,
+                "contentType": "application/vnd.android.package-archive", "sha256": "…",
+                "expiresAt": "…" },
+  "status": "ready", "notificationId": "…" }
+```
+
+From WSL, pass paths as WSL sees them; the Windows CLI maps `/mnt/<drive>/…` back to the drive and
+anything else through `\\wsl.localhost\<distribution>`. Files are kept up to the relay's retention
+(a week on the hosted relay) and are **not end-to-end encrypted**. `send --artifact <id>` attaches an
+already uploaded file to a later notification; it is looked up on the relay first and must be ready.
+
 ### `help` and `--version`
 
 ```text
