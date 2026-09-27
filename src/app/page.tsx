@@ -1,19 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BellRing,
-  Check,
-  Coins,
-  Database,
-  Gauge,
-  LockKeyhole,
-  Minus,
-  Network,
-  PlayCircle,
-  Radio,
-  Route,
-  Terminal,
-} from "lucide-react";
+import { ArrowRight, BellRing, Check, Coins, Database, Download, Gauge, LockKeyhole, Minus, Network, PlayCircle, Radio, Route, Terminal } from "lucide-react";
 
 import { ControlPlaneDiagram } from "@/components/control-plane-diagram";
 import { CopyCommand } from "@/components/copy-command";
@@ -23,7 +9,7 @@ import { CountUp, Reveal, Stagger, StaggerItem } from "@/components/motion/revea
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { basePath, demoPath, docsEntry, site } from "@/lib/site";
+import { basePath, demoPath, site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const facts = [
@@ -31,7 +17,7 @@ const facts = [
   { value: 19, label: "opt-in delivery channels" },
   { value: 6, label: "local usage sources" },
   { value: 3, label: "wire formats the router speaks" },
-  { value: 0, label: "telemetry services" },
+  { value: 0, label: "prompts, files, or usage figures sent to us" },
 ];
 
 const pillars = [
@@ -112,10 +98,10 @@ export default function Home() {
               it tells you the moment an agent needs you, and carries your answer back.
             </p>
             <div className="mt-9 flex flex-wrap justify-center gap-3">
-              <Button asChild size="lg"><a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Try the interface</a></Button>
-              <Button asChild size="lg" variant="ghost"><Link href={docsEntry}>Install with your agent</Link></Button>
+              <Button asChild size="lg"><Link href="/download/"><Download />Download Nokoo</Link></Button>
+              <Button asChild size="lg" variant="outline"><a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Try the interface</a></Button>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">Local first · free on your machine · no telemetry. Windows desktop app; broker, CLI, dashboard, and router on macOS and Linux too.</p>
+            <p className="mt-5 text-sm text-muted-foreground">Local first · free on your machine · an anonymous daily usage count and nothing else. Windows desktop app; broker, CLI, dashboard, and router on macOS and Linux too.</p>
           </Reveal>
           <Reveal delay={0.15} className="mt-16">
             <ControlPlaneDiagram />
@@ -315,7 +301,7 @@ export default function Home() {
         <Reveal>
           <Card className="items-center bg-primary py-12 text-center text-primary-foreground">
             <CardHeader className="max-w-3xl"><CardTitle className="text-3xl tracking-[-0.035em] sm:text-4xl">Stop checking every terminal.</CardTitle><CardDescription className="mt-3 text-base text-primary-foreground/70">Install Nokoo, hand your coding agent the bundled skill, and let the control plane tell you when a human is actually needed.</CardDescription></CardHeader>
-            <CardContent className="flex flex-wrap justify-center gap-3"><Button asChild variant="secondary"><a href={demoPath} target="_blank" rel="noreferrer">Try the interface <ArrowRight /></a></Button><Button asChild variant="outline" className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"><Link href={docsEntry}>Install with your agent</Link></Button></CardContent>
+            <CardContent className="flex flex-wrap justify-center gap-3"><Button asChild variant="secondary"><a href={demoPath} target="_blank" rel="noreferrer">Try the interface <ArrowRight /></a></Button><Button asChild variant="outline" className="border-primary-foreground/25 bg-transparent text-primary-foreground hover:bg-primary-foreground/10"><Link href="/download/">Download Nokoo</Link></Button></CardContent>
           </Card>
         </Reveal>
       </section>

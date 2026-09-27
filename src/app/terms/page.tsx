@@ -5,7 +5,7 @@ import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Terms of service",
-  description: "The terms for the hosted Nokoo Relay service.",
+  description: "The terms for Nokoo accounts, desktop downloads, and the hosted Nokoo Relay service.",
 };
 
 const CONTACT = site.contact;
@@ -24,14 +24,19 @@ export default function TermsPage() {
     <main className="overflow-x-clip">
       <article className="mx-auto max-w-[760px] px-4 py-16 sm:px-6">
         <h1 className="text-3xl font-semibold tracking-tight">Terms of service</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Last updated: 14 September 2026</p>
+        <p className="mt-2 text-sm text-muted-foreground">Last updated: 27 September 2026</p>
 
         <div className="mt-10 space-y-8 text-sm leading-relaxed text-muted-foreground">
           <Section heading="Acceptance">
             <p>
-              These terms apply to the hosted preview of Nokoo Relay operated by Kabani Tech
-              Private Limited. By creating an account or using the hosted service, you agree to
-              them. If you do not agree, do not use the hosted service.
+              These terms apply to Nokoo accounts, to downloading the Nokoo desktop applications,
+              and to the hosted preview of Nokoo Relay, all operated by Kabani Tech Private Limited.
+              By creating an account, downloading, or using the hosted service, you agree to them. The
+              desktop applications themselves are licensed under the{" "}
+              <a href="/eula/" className="underline underline-offset-4 hover:text-foreground">
+                End User Licence Agreement
+              </a>
+              . If you do not agree, do not create an account or use the service.
             </p>
           </Section>
 
@@ -47,6 +52,19 @@ export default function TermsPage() {
                 {CONTACT}
               </a>{" "}
               if you believe your account or a paired device has been compromised.
+            </p>
+          </Section>
+
+          <Section heading="Downloads">
+            <p>
+              A free account lets you download the desktop applications for your own use under the
+              End User Licence Agreement. Download links are personal and expire after a few
+              minutes. Do not share them, and do not republish or host the installers anywhere else;
+              each person must download from their own account. Each download is recorded as the{" "}
+              <a href="/privacy/" className="underline underline-offset-4 hover:text-foreground">
+                privacy policy
+              </a>{" "}
+              describes, and we may withdraw downloads from an account that redistributes them.
             </p>
           </Section>
 
@@ -90,9 +108,10 @@ export default function TermsPage() {
           <Section heading="Software">
             <p>
               Nokoo, the broker that runs on your own machine, Nokoo Relay, and the Nokoo mobile application are
-              proprietary software of Kabani Tech Private Limited. The broker is licensed to you for your own use under
-              the licence that ships with it; the relay and the mobile application are provided to you as a service
-              under these terms. No other right to copy, modify, or redistribute any of them is granted.
+              proprietary software of Kabani Tech Private Limited. The desktop applications are licensed to you under
+              the End User Licence Agreement that ships with them as EULA.txt; the relay and the mobile application are
+              provided to you as a service under these terms. No other right to copy, modify, or redistribute any of
+              them is granted.
             </p>
           </Section>
 

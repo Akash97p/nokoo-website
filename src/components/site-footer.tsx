@@ -17,8 +17,10 @@ export function SiteFooter() {
           <Link href="/relay/">Relay</Link>
           <Link href="/pricing/">Pricing</Link>
           <Link href="/arc/">ARC</Link>
+          <Link href="/download/">Download</Link>
           <Link href="/privacy/">Privacy</Link>
           <Link href="/terms/">Terms</Link>
+          <Link href="/eula/">EULA</Link>
           <a href={demoPath} target="_blank" rel="noreferrer">Demo</a>
         </nav>
       </div>
