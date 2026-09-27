@@ -1,0 +1,210 @@
+NOKOO END USER LICENCE AGREEMENT
+
+Version 1.0 - effective 27 September 2026
+
+This End User Licence Agreement ("Agreement") is between you and Kabani Tech
+Private Limited, a company incorporated in India with its office in Bengaluru,
+Karnataka ("Kabani Tech", "we", "us"). It governs the Nokoo desktop
+applications for Windows, macOS, and Linux - the tray and menu-bar apps, the
+local broker ("nokood"), the "nokoo" command-line tool, the agent skills and
+hooks they install, their documentation, and every update we provide
+(together, the "Software").
+
+By downloading, installing, or using the Software, or by selecting "I accept"
+in an installer, you agree to this Agreement. If you are accepting on behalf
+of an organisation, you confirm that you may bind it, and "you" means that
+organisation. If you do not agree, do not download, install, or use the
+Software.
+
+
+1. LICENCE
+
+1.1 Subject to this Agreement, we grant you a personal, non-exclusive,
+    non-transferable, non-sublicensable, revocable licence to install and use
+    the Software, free of charge, in object-code form, on computers that you
+    own or control, for your own personal use or the internal business
+    purposes of your organisation.
+
+1.2 You may make one copy of the installer for backup purposes.
+
+1.3 The Software is licensed, not sold. We and our licensors keep all right,
+    title, and interest in the Software, including all intellectual property
+    rights. No right is granted except as expressly stated in this Agreement.
+
+
+2. RESTRICTIONS
+
+You must not, and must not permit anyone else to:
+
+  (a) copy, distribute, sell, rent, lease, lend, sublicense, or otherwise
+      make the Software, or any installer for it, available to any third
+      party, including by hosting it for download - each user must obtain the
+      Software from us;
+  (b) modify, translate, adapt, or create derivative works of the Software;
+  (c) reverse engineer, decompile, or disassemble the Software, or attempt to
+      derive its source code, except to the extent that applicable law
+      expressly permits this despite this restriction;
+  (d) remove, alter, or obscure any copyright, trademark, or other
+      proprietary notice in the Software;
+  (e) circumvent or interfere with any security, licensing, or usage-count
+      feature of the Software;
+  (f) use the Software to build a competing product, or to provide the
+      Software's functionality to third parties as a service; or
+  (g) use the Software in breach of any applicable law, or to send spam,
+      malware, or unlawful content.
+
+
+3. ACCOUNTS AND DOWNLOADS
+
+3.1 The Software is available only to people who have created an account at
+    nokoo.ai. You must give accurate information and keep your credentials
+    secure.
+
+3.2 When you download the Software we record your account, the version and
+    platform you downloaded, the time, your IP address, and your browser's
+    user-agent string. We use this to operate and secure the download
+    service, to prevent abuse, and to count downloads.
+
+
+4. USAGE COUNTS - WHAT THE SOFTWARE SENDS US
+
+4.1 To count how many installations are in use, the Software sends a small
+    message to our servers about once a day while it runs (a "usage ping").
+    A usage ping contains only:
+
+      - a random installation identifier that the Software generates the
+        first time it runs and keeps in its own settings file;
+      - the operating system family (Windows, macOS, or Linux) and processor
+        architecture;
+      - the operating system version; and
+      - the Software's version.
+
+4.2 The installation identifier is random. It is not derived from your
+    hardware, your name, your user or computer name, or your account, and a
+    usage ping does not carry your account or any credential. We do not
+    store your IP address with usage pings.
+
+4.3 The Software does not send us the content of your notifications, your
+    prompts, code, files, file paths, project or agent names, usage
+    statistics, crash dumps, or anything else from your computer as part of
+    usage counting.
+
+4.4 You can turn usage pings off at any time: in Settings on Windows, on
+    the About page of the web interface, by setting "usagePingsEnabled":
+    false in the Software's configuration file (config.json), or by setting
+    the environment variable NOKOO_USAGE_PINGS=0. Turning them off does not
+    affect any other feature.
+
+4.5 Optional features that you choose to configure - such as delivering
+    notifications through Nokoo Relay, a messaging provider, or the model
+    router - send data to the service you configured, as described when you
+    configure them. Those services are governed by their own terms, and in
+    the case of Nokoo Relay by the Nokoo Terms of Service.
+
+4.6 Our Privacy Policy at nokoo.ai/privacy describes in more detail what we
+    collect, how long we keep it, and your rights.
+
+
+5. UPDATES
+
+We may provide updates, which are part of the Software and governed by this
+Agreement unless they come with different terms. We are not obliged to
+provide updates, support, or maintenance, and we may change or discontinue
+any version or feature.
+
+
+6. THIRD-PARTY COMPONENTS AND SERVICES
+
+The Software includes third-party components listed in
+THIRD_PARTY_NOTICES.txt. Each remains under its own licence, and nothing in
+this Agreement limits your rights under those licences. The Software can
+connect to third-party services that you configure (for example AI model
+providers, messaging apps, or push-notification services). We are not
+responsible for those services, and your use of them is governed by their
+terms.
+
+
+7. FEEDBACK
+
+If you send us suggestions or feedback, we may use them without restriction
+or obligation to you.
+
+
+8. TERM AND TERMINATION
+
+8.1 This Agreement applies from when you first accept it until it ends.
+
+8.2 You may end it at any time by uninstalling the Software and deleting
+    every copy.
+
+8.3 We may end it, or suspend your access to downloads, if you breach it.
+    It also ends automatically if you breach section 2.
+
+8.4 When it ends, you must stop using the Software and delete every copy.
+    Sections 1.3, 2, 7, 9, 10, 11, and 12 survive.
+
+
+9. DISCLAIMER OF WARRANTIES
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY
+KIND. TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE DISCLAIM ALL WARRANTIES,
+EXPRESS, IMPLIED, OR STATUTORY, INCLUDING WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTY
+THAT THE SOFTWARE WILL BE UNINTERRUPTED, ERROR-FREE, OR SECURE, OR THAT A
+NOTIFICATION WILL BE DELIVERED. The Software is pre-release software. Do not
+rely on it as the only way to learn that something needs your attention, or
+for any purpose where its failure could cause injury, loss of life, or
+significant property or financial damage.
+
+
+10. LIMITATION OF LIABILITY
+
+10.1 TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER KABANI TECH NOR ITS
+     DIRECTORS, EMPLOYEES, OR LICENSORS WILL BE LIABLE FOR ANY INDIRECT,
+     INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS
+     OF PROFITS, REVENUE, DATA, GOODWILL, OR BUSINESS OPPORTUNITY, ARISING
+     OUT OF OR RELATING TO THE SOFTWARE OR THIS AGREEMENT, HOWEVER CAUSED,
+     EVEN IF ADVISED OF THEIR POSSIBILITY.
+
+10.2 OUR TOTAL LIABILITY ARISING OUT OF OR RELATING TO THE SOFTWARE OR THIS
+     AGREEMENT IS LIMITED TO THE GREATER OF THE AMOUNT YOU PAID US FOR THE
+     SOFTWARE IN THE TWELVE MONTHS BEFORE THE CLAIM AND INR 1,000.
+
+10.3 Nothing in this Agreement limits liability that cannot be limited under
+     applicable law.
+
+
+11. GENERAL
+
+11.1 Export. You must comply with all export-control and sanctions laws that
+     apply to your use of the Software.
+
+11.2 Changes. We may update this Agreement. The new version will be
+     published at nokoo.ai/eula with its effective date and will apply to
+     updates you install after that date. If you do not accept it, do not
+     install the update.
+
+11.3 Entire agreement. This Agreement, together with the Privacy Policy and,
+     where you use Nokoo Relay, the Terms of Service, is the entire agreement
+     between you and us about the Software.
+
+11.4 Severability and waiver. If any provision is held unenforceable, the
+     rest remains in effect. A failure to enforce a provision is not a
+     waiver of it.
+
+11.5 Assignment. You may not assign this Agreement without our written
+     consent. We may assign it to an affiliate or to a successor of our
+     business.
+
+
+12. GOVERNING LAW
+
+This Agreement is governed by the laws of India. The courts at Bengaluru,
+Karnataka have exclusive jurisdiction over any dispute arising out of or
+relating to it or to the Software.
+
+
+13. CONTACT
+
+Kabani Tech Private Limited, Bengaluru, Karnataka, India -
+legal@kabanitech.com

@@ -61,7 +61,7 @@ export default function InsightsPage() {
             <Row icon={ShieldCheck}>No prompt, response, or credential text ever enters a usage or routing report.</Row>
             <Row icon={ShieldCheck}>Account config stores profile labels and paths, never copied credentials.</Row>
             <Row icon={ShieldCheck}>The page is owner-only on loopback: foreign hosts and cross-site state changes are rejected.</Row>
-            <Row icon={ShieldCheck}>Nothing is uploaded. There is no telemetry and no analytics service.</Row>
+            <Row icon={ShieldCheck}>Nothing on this page is uploaded: usage and cost figures never leave your computer.</Row>
           </ul>
         </div>
         <Card className="bg-black">

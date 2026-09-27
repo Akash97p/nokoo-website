@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, PlayCircle } from "lucide-react";
+import { Download, PlayCircle } from "lucide-react";
 
 import { MobileNav } from "@/components/mobile-nav";
 import { Button } from "@/components/ui/button";
-import { basePath, demoPath, docsEntry, navigation } from "@/lib/site";
+import { basePath, demoPath, navigation } from "@/lib/site";
 
 export function SiteHeader() {
   return (
@@ -31,7 +31,7 @@ export function SiteHeader() {
             <a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Demo</a>
           </Button>
           <Button asChild size="sm">
-            <Link href={docsEntry}>Get started <ArrowRight /></Link>
+            <Link href="/download/"><Download />Download</Link>
           </Button>
           <MobileNav />
         </div>

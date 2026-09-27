@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copies what this site publishes from the desktop repository: the Markdown guides, SECURITY.md,
+# Copies what this site publishes from the desktop repository: the Markdown guides, SECURITY.md, the EULA,
 # the ARC schemas, the logo, and the broker's web UI for the hosted demo. The demo keeps this
 # site's own transport (js/api.js) and invented data (js/demo-data.js) in place of the broker's.
 set -euo pipefail
@@ -14,6 +14,8 @@ for doc in "$ROOT"/content/docs/*.md; do
   cp "$DESKTOP/docs/$(basename "$doc")" "$doc"
 done
 cp "$DESKTOP/SECURITY.md" "$ROOT/content/SECURITY.md"
+cp "$DESKTOP/EULA.txt" "$ROOT/content/EULA.txt"
+cp "$DESKTOP/EULA.txt" "$ROOT/public/eula.txt"
 cp "$DESKTOP"/src/Nokoo.Protocol/Schemas/arc-*.schema.json "$ROOT/public/schemas/"
 cp "$DESKTOP/assets/branding/an.png" "$ROOT/public/an.png"
 

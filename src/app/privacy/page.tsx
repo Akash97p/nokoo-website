@@ -5,7 +5,7 @@ import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
-  description: "How Nokoo Relay handles account data, encrypted envelopes, and delivery metadata.",
+  description: "What Nokoo collects — account and download records, an anonymous daily usage count, and Relay delivery metadata — and what it never does.",
 };
 
 const CONTACT = site.contact;
@@ -24,19 +24,85 @@ export default function PrivacyPage() {
     <main className="overflow-x-clip">
       <article className="mx-auto max-w-[760px] px-4 py-16 sm:px-6">
         <h1 className="text-3xl font-semibold tracking-tight">Privacy policy</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Last updated: 14 September 2026</p>
+        <p className="mt-2 text-sm text-muted-foreground">Last updated: 27 September 2026</p>
 
         <div className="mt-10 space-y-8 text-sm leading-relaxed text-muted-foreground">
+          <Section heading="In short">
+            <p>
+              We collect metadata, not content. We know who has an account, which builds each
+              account downloaded and from which IP address, and how many installations of the
+              desktop app are in use. We never receive your notifications, prompts, code, files,
+              projects, or usage figures from the desktop app, and nothing we collect is sold or used
+              for advertising.
+            </p>
+          </Section>
+
           <Section heading="Who is responsible">
             <p>
-              The hosted preview of Nokoo Relay is operated by Kabani Tech Private Limited,
-              Bengaluru, Karnataka, India, which is the data controller for accounts and delivery
-              metadata on that instance.
+              nokoo.ai, Nokoo accounts, desktop downloads, the usage count, and the hosted preview of
+              Nokoo Relay are operated by Kabani Tech Private Limited, Bengaluru, Karnataka, India,
+              which is the data controller for the data described here.
             </p>
             <p>
               Where Nokoo Relay is run privately by another organization under an agreement
               with us, that organization is the data controller for its instance, and Kabani Tech
               Private Limited does not receive its data.
+            </p>
+          </Section>
+
+          <Section heading="Accounts">
+            <p>
+              A Nokoo account holds your email address, a password hash (the password itself is never
+              stored), your plan, and when the account was created and last signed in. An account is
+              needed to download the desktop apps, because Nokoo is not open source and has no public
+              release page.
+            </p>
+          </Section>
+
+          <Section heading="Downloads">
+            <p>Each time you download a desktop build, we record:</p>
+            <ul className="list-disc space-y-2 pl-5">
+              <li>your account;</li>
+              <li>the version, platform, and processor architecture of the build;</li>
+              <li>the date and time;</li>
+              <li>your IP address; and</li>
+              <li>your browser&apos;s user-agent string.</li>
+            </ul>
+            <p>
+              We use these records to count downloads by platform and version, to operate and secure
+              the download service, and to detect abuse such as redistributing installers. They are
+              kept for two years and deleted with your account.
+            </p>
+          </Section>
+
+          <Section heading="The desktop app's usage count">
+            <p>
+              Once a day while it runs, the desktop app tells us it is in use by sending exactly five
+              things: a random installation identifier, the operating system (Windows, macOS, or
+              Linux), its version, the processor architecture, and the Nokoo version.
+            </p>
+            <p>
+              The installation identifier is generated at random on your computer the first time the
+              app sends a count. It is not derived from your hardware, your name, your user or computer
+              name, or your account, and the message carries no account or credential, so we cannot
+              link it to you or to a download. We do not store your IP address with it. We keep one
+              record per installation (its identifier, platform, latest versions, and when it was
+              first and last seen) and a record of each day it was active, which is deleted after
+              about thirteen months.
+            </p>
+            <p>
+              You can turn the count off at any time: in Settings on Windows, on the About page of the
+              web interface, with <span className="font-mono text-foreground">&quot;usagePingsEnabled&quot;: false</span>{" "}
+              in the app&apos;s configuration file, or with the environment variable{" "}
+              <span className="font-mono text-foreground">NOKOO_USAGE_PINGS=0</span>. Section 4 of the{" "}
+              <a href="/eula/" className="underline underline-offset-4 hover:text-foreground">End User Licence Agreement</a>{" "}
+              says the same.
+            </p>
+            <p>
+              Everything else the desktop app does stays on your computer: notification history,
+              usage and cost figures, quota, router traffic, and channel settings. Data leaves it only
+              through a channel you configure yourself — Relay, a messaging service, or a model
+              provider through the router — and only what that channel needs.
             </p>
           </Section>
 
@@ -85,8 +151,13 @@ export default function PrivacyPage() {
               <li>Delivery attempts and result codes: 14 days.</li>
               <li>Audit events: 30 days.</li>
               <li>Interaction answers: 7 days, or until the requesting installation reads them.</li>
+              <li>Download records, including IP address: 2 years.</li>
+              <li>Daily usage-count activity: about 13 months.</li>
             </ul>
-            <p>Account records are kept while the account exists.</p>
+            <p>
+              Account records are kept while the account exists. Deleting an account deletes its
+              download records.
+            </p>
           </Section>
 
           <Section heading="Payments">
@@ -111,8 +182,10 @@ export default function PrivacyPage() {
 
           <Section heading="What we do not do">
             <p>
-              We do not sell personal data, and we do not use notification content or delivery
-              metadata for advertising. Telemetry is absent by default. The operator console shows
+              We do not sell personal data, and we do not use notification content, download
+              records, the usage count, or delivery metadata for advertising. We run no third-party
+              analytics or tracking on nokoo.ai or in the desktop app. The only data the desktop app
+              sends us on its own is the usage count described above. The operator console shows
               delivery metadata and result codes only — never notification plaintext, ciphertext, or
               decoded content.
             </p>
@@ -136,7 +209,7 @@ export default function PrivacyPage() {
 
           <Section heading="Children">
             <p>
-              The hosted relay is not directed at children and is not intended for use by anyone
+              Nokoo and the hosted relay are not directed at children and is not intended for use by anyone
               under 13. We do not knowingly collect data from children.
             </p>
           </Section>

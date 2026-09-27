@@ -5,6 +5,9 @@ web UI demo, and the Relay pricing, privacy, and terms pages. It is a static Nex
 
 - `src/app/` — the pages. `/pricing/`, `/privacy/`, and `/terms/` describe the hosted relay; their
   "Choose a plan" links hand off to the relay's own `/signup` page, which takes payment.
+- `/download/` hands off to the relay: `/signup?intent=download` makes a free account, and the
+  console's Downloads tab serves the installers. `/eula/` renders `content/EULA.txt`, a copy of the
+  desktop repository's `EULA.txt` (also served as `/eula.txt`).
 - `content/` — the Markdown the `/docs` pages render, copied from the desktop repository.
 - `public/` — the logo, favicons, ARC schemas, and the hosted web UI demo.
 
@@ -19,7 +22,7 @@ npm run build        # static export in out/
 
 ## Refresh from the desktop repository
 
-The guides, schemas, logo, and demo are copies. After the desktop repository changes them:
+The guides, schemas, EULA, logo, and demo are copies. After the desktop repository changes them:
 
 ```bash
 ./scripts/sync-content.sh    # NOKOO_DESKTOP_REPO defaults to ../agent-notify
