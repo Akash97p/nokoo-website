@@ -7,9 +7,9 @@ export const site = {
     "The local control plane for coding agents: route model calls, measure usage and cost, watch live quota, and get notified — and answer — when an agent needs you.",
   url: process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : "https://nokoo.ai",
+    : "https://nokooai.kabanitech.com",
   /** The hosted relay, where accounts are created and plans are bought. */
-  relayUrl: process.env.NEXT_PUBLIC_RELAY_URL ?? "https://an.relay.dev.kabanitech.com",
+  relayUrl: process.env.NEXT_PUBLIC_RELAY_URL ?? "https://nokoo.relay.kabanitech.com",
   contact: "legal@kabanitech.com",
 } as const;
 

@@ -1,6 +1,6 @@
 # Nokoo website
 
-The public site for [nokoo.ai](https://nokoo.ai): the product pages, the documentation, the hosted
+The public site for [nokooai.kabanitech.com](https://nokooai.kabanitech.com): the product pages, the documentation, the hosted
 web UI demo, and the Relay pricing, privacy, and terms pages. It is a static Next.js export.
 
 - `src/app/` — the pages. `/pricing/`, `/privacy/`, and `/terms/` describe the hosted relay; their
@@ -34,7 +34,7 @@ A new guide also needs an entry in `src/lib/docs.ts` to appear in navigation.
 
 Vercel with the Next.js preset (Node 24). Optional environment variables:
 
-- `NEXT_PUBLIC_RELAY_URL` — the hosted relay the pricing page links to (default `https://an.relay.dev.kabanitech.com`);
+- `NEXT_PUBLIC_RELAY_URL` — the hosted relay the pricing page links to (default `https://nokoo.relay.kabanitech.com`);
 - `NEXT_PUBLIC_BASE_PATH` — only when serving under a sub-path.
 
 ## Licence

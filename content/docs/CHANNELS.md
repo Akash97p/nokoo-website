@@ -482,7 +482,7 @@ Broker authentication/topic rejection is permanent; broker busy, rate/quota, and
 
 ## Nokoo Relay
 
-Relay is the hosted Nokoo service at `https://an.relay.dev.kabanitech.com`. See
+Relay is the hosted Nokoo service at `https://nokoo.relay.kabanitech.com`. See
 [Nokoo Relay](RELAY.md) for what it is and how to connect to it; this section covers the
 provider settings only. The endpoint is fixed — there is no deployment choice and no server address
 to enter.
@@ -514,7 +514,7 @@ advanced options for pointing a test build at a stub Relay; neither is part of n
 
 ```json
 {
-  "relay_url": "https://an.relay.dev.kabanitech.com",
+  "relay_url": "https://nokoo.relay.kabanitech.com",
   "sender_name": "My ThinkPad",
   "installation_id": "7f3a…",
   "relay_name": "Phone"

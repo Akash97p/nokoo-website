@@ -34,8 +34,8 @@ export default {
         card({
           title: "Links",
           body: h("div", { class: "stack" },
-            link("https://nokoo.ai/", "Website"),
-            link("https://nokoo.ai/docs/", "Documentation"),
+            link("https://nokooai.kabanitech.com/", "Website"),
+            link("https://nokooai.kabanitech.com/docs/", "Documentation"),
             link("https://kabanitech.com/", "Kabani Tech Private Limited")),
         })));
   },

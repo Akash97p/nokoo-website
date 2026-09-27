@@ -5,7 +5,7 @@ Center manage. It runs wherever the broker runs, so macOS and Linux get the same
 surface as Windows, and nothing extra is installed.
 
 A copy of this interface runs at
-[nokoo.ai/demo/](https://nokoo.ai/demo/). It is the
+[nokooai.kabanitech.com/demo/](https://nokooai.kabanitech.com/demo/). It is the
 same `wwwroot` the broker serves — copied by the website repository's `scripts/sync-content.sh` — with `js/api.js` replaced by a shim that answers from invented fixtures instead of the
 API. Use it to see a page before installing; changes there live in the browser tab and nothing else.
 

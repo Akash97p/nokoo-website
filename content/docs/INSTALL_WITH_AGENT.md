@@ -8,7 +8,7 @@ order. Work in the terminal you already have. At the end, show the person the ch
 Nokoo is a local notification broker for coding agents: agents tell it when a task finishes, when
 they need an answer, or when something failed, and it shows a desktop notification (and, if the person
 sets it up, sends it to their phone). It also has a web interface, token usage and live quota views for
-agent accounts, and an optional local model router. Project: <https://nokoo.ai/>.
+agent accounts, and an optional local model router. Project: <https://nokooai.kabanitech.com/>.
 
 ## Rules
 
