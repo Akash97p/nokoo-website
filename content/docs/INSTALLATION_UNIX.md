@@ -37,7 +37,7 @@ NOKOO_PREFIX=/usr/local/bin NOKOO_VERSION=v0.2.0-alpha.3 sh install.sh
 ### Manual install
 
 Download the archive for your platform from the
-releases page on [nokoo.ai](https://nokoo.ai/), check it against
+releases page on [nokooai.kabanitech.com](https://nokooai.kabanitech.com/), check it against
 `SHA256SUMS.txt`, then:
 
 ```sh

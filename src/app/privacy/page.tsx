@@ -39,7 +39,7 @@ export default function PrivacyPage() {
 
           <Section heading="Who is responsible">
             <p>
-              nokoo.ai, Nokoo accounts, desktop downloads, the usage count, and the hosted preview of
+              nokooai.kabanitech.com, Nokoo accounts, desktop downloads, the usage count, and the hosted preview of
               Nokoo Relay are operated by Kabani Tech Private Limited, Bengaluru, Karnataka, India,
               which is the data controller for the data described here.
             </p>
@@ -184,7 +184,7 @@ export default function PrivacyPage() {
             <p>
               We do not sell personal data, and we do not use notification content, download
               records, the usage count, or delivery metadata for advertising. We run no third-party
-              analytics or tracking on nokoo.ai or in the desktop app. The only data the desktop app
+              analytics or tracking on nokooai.kabanitech.com or in the desktop app. The only data the desktop app
               sends us on its own is the usage count described above. The operator console shows
               delivery metadata and result codes only — never notification plaintext, ciphertext, or
               decoded content.

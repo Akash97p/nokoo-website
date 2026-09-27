@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://nokoo.ai/schemas/arc-0.1.schema.json",
+  "$id": "https://nokooai.kabanitech.com/schemas/arc-0.1.schema.json",
   "title": "Attention Request Contract 0.1",
   "description": "A transport-neutral event contract for creating, updating, and resolving bounded requests for human attention.",
   "type": "object",

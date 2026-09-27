@@ -3,7 +3,7 @@
 Nokoo Relay is the hosted service that carries attention requests from your computers to your
 phone. It runs at:
 
-**`https://an.relay.dev.kabanitech.com`**
+**`https://nokoo.relay.kabanitech.com`**
 
 From Nokoo's point of view Relay is one more opt-in outbound channel, selected in
 **Settings → Channels → Providers** as the provider type **Nokoo Relay**. Everything on this

@@ -406,7 +406,7 @@ routes apply their configured content policy only after the request is stored lo
 The normative machine-readable schema is
 [`src/Nokoo.Protocol/Schemas/arc-0.2.schema.json`](../src/Nokoo.Protocol/Schemas/arc-0.2.schema.json).
 The website publishes the same file at
-[`schemas/arc-0.2.schema.json`](https://nokoo.ai/schemas/arc-0.2.schema.json).
+[`schemas/arc-0.2.schema.json`](https://nokooai.kabanitech.com/schemas/arc-0.2.schema.json).
 
 `Nokoo.Protocol` contains the portable ARC models, schema, native API DTOs, enums, and shared
 JSON rules. It has no WPF, ASP.NET, SQLite, or provider dependencies. Projection into Nokoo's

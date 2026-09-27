@@ -57,7 +57,7 @@ You must not, and must not permit anyone else to:
 3. ACCOUNTS AND DOWNLOADS
 
 3.1 The Software is available only to people who have created an account at
-    nokoo.ai. You must give accurate information and keep your credentials
+    nokooai.kabanitech.com. You must give accurate information and keep your credentials
     secure.
 
 3.2 When you download the Software we record your account, the version and
@@ -101,7 +101,7 @@ You must not, and must not permit anyone else to:
     configure them. Those services are governed by their own terms, and in
     the case of Nokoo Relay by the Nokoo Terms of Service.
 
-4.6 Our Privacy Policy at nokoo.ai/privacy describes in more detail what we
+4.6 Our Privacy Policy at nokooai.kabanitech.com/privacy describes in more detail what we
     collect, how long we keep it, and your rights.
 
 
@@ -180,7 +180,7 @@ significant property or financial damage.
      apply to your use of the Software.
 
 11.2 Changes. We may update this Agreement. The new version will be
-     published at nokoo.ai/eula with its effective date and will apply to
+     published at nokooai.kabanitech.com/eula with its effective date and will apply to
      updates you install after that date. If you do not accept it, do not
      install the update.
 
