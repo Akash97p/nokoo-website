@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Apple, ArrowRight, BarChart3, Lock, Monitor, Terminal, UserRound } from "lucide-react";
+import { Apple, BarChart3, Lock, Monitor, Terminal, UserRound } from "lucide-react";
 
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { site } from "@/lib/site";
+import { AccountDownloads } from "./account-downloads";
 
 export const metadata: Metadata = {
   title: "Download Nokoo",
   description:
-    "Nokoo for Windows, macOS, and Linux. Free with a Nokoo account; the installers are handed out from your account console.",
+    "Nokoo for Windows, macOS, and Linux. Free with a Nokoo account — create one here and download straight away.",
 };
-
-/** Where a new visitor makes the free account, and where an existing one downloads. */
-const SIGNUP = `${site.relayUrl}/signup?intent=download`;
-const CONSOLE = `${site.relayUrl}/console?tab=downloads`;
 
 const platforms = [
   {
@@ -43,7 +38,7 @@ const facts = [
   {
     icon: UserRound,
     title: "Why an account",
-    body: "Nokoo is not open source, so there is no public release page. Your account is how we hand you the installers — every current and earlier build, checksummed. It is free: no card, no plan.",
+    body: "Nokoo is not open source, so there is no public release page. Your account is how we hand you the builds — every current and earlier one, checksummed — and it is the same account Relay uses. It is free: no card, no plan.",
   },
   {
     icon: Lock,
@@ -67,17 +62,9 @@ export default function DownloadPage() {
             <Badge variant="secondary">Free · Windows, macOS, Linux</Badge>
             <h1 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">Download Nokoo.</h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
-              Create a free account and download the installer for your computer from your console. The desktop app is
-              free to use on your own machines; Relay, to reach your phone, is an optional plan you can add later.
+              Create a free account below and download the build for your computer. The desktop app is free to use on
+              your own machines; Relay, to reach your phone, is an optional plan you can add later with the same account.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <a href={SIGNUP}>Create a free account <ArrowRight /></a>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <a href={CONSOLE}>I have an account — sign in</a>
-              </Button>
-            </div>
             <p className="mt-5 text-sm text-muted-foreground">
               By downloading you accept the <Link href="/eula/" className="underline underline-offset-4 hover:text-foreground">End User Licence Agreement</Link>.
               See the <Link href="/privacy/" className="underline underline-offset-4 hover:text-foreground">privacy policy</Link> for what is recorded.
@@ -86,7 +73,13 @@ export default function DownloadPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+      <section id="get" className="mx-auto max-w-4xl scroll-mt-20 px-4 py-16 sm:px-6">
+        <div className="rounded-xl border bg-card p-6 sm:p-8">
+          <AccountDownloads />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
         <Stagger className="grid gap-4 md:grid-cols-3">
           {platforms.map((platform) => (
             <StaggerItem key={platform.name}>
