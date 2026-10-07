@@ -254,7 +254,7 @@ export default {
         const idle = () => {
           state.replaceChildren(relay?.connected
             ? notice(`Connected${relay.relay_name ? ` to ${relay.relay_name}` : ""}. The credential is stored encrypted.`, "ok", "check")
-            : notice("Not connected yet. Press Connect, then approve the short code on the hosted Relay at nokoo.relay.kabanitech.com.", null, "phone"));
+            : notice("Not connected yet. Press Connect, then approve the short code on the hosted Relay at nokooai.relay.kabanitech.com.", null, "phone"));
         };
         idle();
 

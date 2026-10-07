@@ -26,12 +26,12 @@ its SHA-256 against the published checksum file**, and installs the CLI and brok
 `~/.local/bin`; a macOS archive that contains `nokoo-menubar` installs that third executable too.
 It refuses to install anything it cannot verify. With no version override, it selects the newest
 published release, including a prerelease; set `NOKOO_VERSION` to pin an exact tag. The current
-`v0.2.0-alpha.3` archive includes the native macOS menu-bar executable.
+`v0.3.0-alpha.3` archive includes the native macOS menu-bar executable.
 
 To install elsewhere or pin a version:
 
 ```sh
-NOKOO_PREFIX=/usr/local/bin NOKOO_VERSION=v0.2.0-alpha.3 sh install.sh
+NOKOO_PREFIX=/usr/local/bin NOKOO_VERSION=v0.3.0-alpha.3 sh install.sh
 ```
 
 ### Manual install

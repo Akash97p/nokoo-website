@@ -379,11 +379,11 @@ The portable Core layer validates and imports WAV/MP3 files into a managed per-u
 
 ### Installer
 
-`Nokoo.Setup` is a WPF per-user installer. `scripts/package.sh` first publishes the tray app and CLI as self-contained single files, then embeds them, the licence, the skill, and the offline guide into the self-contained setup executable.
+`Nokoo.Setup` is a WPF per-user installer. `scripts/package.sh` first publishes the tray app and CLI as self-contained single files, then embeds them, the End User Licence Agreement (`EULA.txt`), the skill, and the offline guide into the self-contained setup executable. A first install requires accepting the EULA; it is installed as `EULA.txt`.
 
 Setup treats a run as an update when this user's uninstall registration names a folder that still
 contains `Nokoo.Tray.exe`. An update keeps that folder and the startup/shortcut choices and
-does not ask for the licence again. It stops the tray by setting `Local\Nokoo.Exit.v1`, an
+does not ask for the EULA again. It stops the tray by setting `Local\Nokoo.Exit.v1`, an
 auto-reset event the single-instance owner creates next to its show-center event; the tray answers
 with the same shutdown as its Exit menu item, and setup kills a tray that has not exited after ten
 seconds. `nokoo.exe` is never stopped, since an agent may be blocked in it: when a payload
@@ -469,6 +469,14 @@ them changes the product rather than the implementation.
     — id, name, size, SHA-256 — and only Relay routes carry them, because only a phone paired to that
     relay can download them. Artifacts are not end-to-end encrypted; their digest is, inside the
     sealed payload.
+
+13. The usage ping is the only data the app sends Kabani Tech unprompted, and its fields are
+   exactly `install_id`, `platform`, `arch`, `os_version`, `app_version`. The install id is a
+   random GUID, never derived from the machine, the user, or an account, and the ping carries no
+   credential, so the relay cannot join it to a download or an account. It is on by default,
+   disclosed in the EULA and the installer, and off with one switch. Adding a field is a change to
+   `EULA.txt`, the privacy policy, the relay's strict schema, and `UsagePingerTests` together.
+   See [USAGE_PINGS.md](USAGE_PINGS.md).
 
 ## Adding a new outbound adapter
 

@@ -10,7 +10,7 @@ import { AccountDownloads } from "./account-downloads";
 export const metadata: Metadata = {
   title: "Download Nokoo",
   description:
-    "Nokoo for Windows, macOS, and Linux. Free with a Nokoo account — create one here and download straight away.",
+    "Nokoo for macOS and Linux, with Windows coming soon. Free with a Nokoo account — create one here and download straight away.",
 };
 
 const platforms = [
@@ -18,7 +18,8 @@ const platforms = [
     icon: Monitor,
     name: "Windows",
     detail: "Windows 10 and 11, x64",
-    install: "A per-user installer — no administrator rights. It adds the tray app and the nokoo command.",
+    soon: true,
+    install: "Coming soon: a per-user installer — no administrator rights — with the tray app and the nokoo command.",
   },
   {
     icon: Apple,
@@ -59,7 +60,7 @@ export default function DownloadPage() {
         <div className="grid-surface pointer-events-none absolute inset-0" />
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24">
           <Reveal className="max-w-3xl">
-            <Badge variant="secondary">Free · Windows, macOS, Linux</Badge>
+            <Badge variant="secondary">Free · macOS and Linux · Windows soon</Badge>
             <h1 className="mt-5 text-5xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">Download Nokoo.</h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
               Create a free account below and download the build for your computer. The desktop app is free to use on
@@ -86,7 +87,10 @@ export default function DownloadPage() {
               <Card className="h-full">
                 <CardHeader>
                   <div className="mb-3 flex size-9 items-center justify-center rounded-md border bg-background"><platform.icon className="size-4" /></div>
-                  <CardTitle>{platform.name}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    {platform.name}
+                    {"soon" in platform && platform.soon && <Badge variant="outline">Coming soon</Badge>}
+                  </CardTitle>
                   <p className="text-xs text-muted-foreground">{platform.detail}</p>
                   <CardDescription className="pt-2 leading-6">{platform.install}</CardDescription>
                 </CardHeader>

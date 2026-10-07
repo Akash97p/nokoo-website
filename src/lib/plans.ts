@@ -41,6 +41,8 @@ export interface Plan {
    * Kept separate so the page never sells a roadmap item as a shipped one.
    */
   planned: string[];
+  /** Built, not yet open to accounts. Shown with a "coming soon" tag. */
+  soon: string[];
 }
 
 export const PLANS: Plan[] = [
@@ -56,6 +58,7 @@ export const PLANS: Plan[] = [
       "1 mobile device",
       "7-day delivery history",
     ],
+    soon: [],
     planned: [],
   },
   {
@@ -69,9 +72,9 @@ export const PLANS: Plan[] = [
       "Answer agents from your phone (interactive responses)",
       "Up to 3 mobile devices",
       "Up to 5 senders",
-      "5 GB of file storage for agents — builds and assets to your phone",
       "30-day delivery history",
     ],
+    soon: ["1 GB of file storage for agents — builds and assets to your phone"],
     planned: [
       "Agent-to-agent relay across machines",
       "Priority delivery queue",
@@ -88,9 +91,9 @@ export const PLANS: Plan[] = [
       "Everything in Standard",
       "Unlimited mobile devices",
       "Unlimited senders",
-      "50 GB of file storage for agents",
       "Priority support",
     ],
+    soon: ["5 GB of file storage for agents"],
     planned: ["Custom retention", "Team seats", "Dedicated relay option"],
   },
 ];
@@ -125,8 +128,8 @@ export const COMPARISON: ComparisonRow[] = [
     key: "storage",
     label: "File storage for agents",
     basic: "—",
-    standard: "5 GB",
-    pro: "50 GB",
+    standard: "1 GB · coming soon",
+    pro: "5 GB · coming soon",
   },
   {
     key: "a2a",

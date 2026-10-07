@@ -101,7 +101,7 @@ export default function Home() {
               <Button asChild size="lg"><Link href="/download/"><Download />Download Nokoo</Link></Button>
               <Button asChild size="lg" variant="outline"><a href={demoPath} target="_blank" rel="noreferrer"><PlayCircle />Try the interface</a></Button>
             </div>
-            <p className="mt-5 text-sm text-muted-foreground">Local first · free on your machine · an anonymous daily usage count and nothing else. Windows desktop app; broker, CLI, dashboard, and router on macOS and Linux too.</p>
+            <p className="mt-5 text-sm text-muted-foreground">Local first · free on your machine · an anonymous daily usage count and nothing else. Broker, CLI, dashboard, and router on macOS and Linux; the Windows app is coming soon.</p>
           </Reveal>
           <Reveal delay={0.15} className="mt-16">
             <ControlPlaneDiagram />
