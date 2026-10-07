@@ -27,6 +27,11 @@ const faq: FaqItem[] = [
       "Encrypted envelope ciphertext and delivery metadata. Notification plaintext and device private keys are never available to the relay. By default envelopes are kept for 72 hours, delivery attempts for 14 days, audit events for 30 days, and interaction answers for 7 days. The privacy policy has the full description.",
   },
   {
+    question: "Is there a free trial?",
+    answer:
+      "Yes. Every new account gets Standard free for one month, with no card. Before a trial ends we will tell you what happens next — nothing is charged and nothing is switched off without notice.",
+  },
+  {
     question: "How does billing work?",
     answer:
       "Plans are monthly subscriptions, paid by card through Stripe or, in India, by card or UPI through Razorpay. Your plan starts the moment the payment provider confirms it. Cancel from the relay console at any time; you keep the plan until the end of the period you paid for. While billing is not enabled, choosing a plan records interest only and nothing is charged.",
@@ -77,6 +82,9 @@ export default function PricingPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-pretty text-lg leading-8 text-muted-foreground">
               Pay for the machines and phones you pair. Every plan is end-to-end encrypted, and you can cancel any time.
+            </p>
+            <p className="mx-auto mt-4 max-w-xl text-pretty text-sm text-foreground">
+              Every new account starts with one month of Standard free — no card, nothing to cancel.
             </p>
           </Reveal>
 

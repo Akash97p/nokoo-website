@@ -129,6 +129,14 @@ export function PlanCards() {
                     <span className="text-muted-foreground">{feature}</span>
                   </li>
                 ))}
+                {plan.soon.map((feature) => (
+                  <li key={feature} className="flex gap-2.5">
+                    <Check size={16} strokeWidth={2} className="mt-0.5 shrink-0 text-muted-foreground/60" />
+                    <span className="text-muted-foreground/80">
+                      {feature} <span className="ml-1 rounded border px-1 py-px font-mono text-[10px]">coming soon</span>
+                    </span>
+                  </li>
+                ))}
                 {plan.planned.map((feature) => (
                   <li key={feature} className="flex gap-2.5">
                     <span className="mt-2 h-1 w-1 shrink-0 translate-x-[5px] rounded-full bg-muted-foreground/60" />

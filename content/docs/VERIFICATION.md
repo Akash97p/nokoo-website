@@ -5,6 +5,16 @@ Environment: Windows 11 host, WSL workspace, Windows .NET SDK 10.0.302 at `/mnt/
 
 This record distinguishes automated/process verification from visual checks. No result from the inherited `/mnt/d/dev/Nokoo` documentation was accepted without rerunning it.
 
+## Windows installer cross-built on macOS (2026-09-28)
+
+`NokooSetup-0.3.0-alpha.2-win-x64.exe` (205,292,970 bytes, SHA-256
+`ab2b7d33cb4691b4c7b6e2f767e83adced51892b0feddd8ff4a1af3b39d8e1bc`) was built on the owner's Intel
+Mac with the native .NET 10 SDK, following the steps of `scripts/package.ps1` with
+`-p:EnableWindowsTargeting=true`: the tray app and CLI as self-contained `win-x64` single files,
+then `Nokoo.Setup` with them as payload (`RequirePayload=true`). `file` reports a PE32+ x86-64 GUI
+executable. It is **not signed** and has **not been run on Windows**: installation, the tray app, and
+the installer UI are unverified for this build. It was published to the hosted relay for download.
+
 ## Sift wording build installed on this Mac (2026-09-22)
 
 Installed local `dev` at `7e06970` on the owner's Intel Mac. The native .NET 10 SDK published the
@@ -2729,3 +2739,29 @@ phone's link request returned a signed URL; the downloaded file's SHA-256 matche
 tested only. No real phone downloaded a file; the mobile app's Download button is covered by its own
 tests. Downloads are served with chunked encoding (a Bun limitation, see the relay's
 `ARTIFACTS.md`), so a download manager learns the size only from `HEAD`.
+
+## EULA and usage pings (2026-09-27)
+
+**What changed.** `EULA.txt` replaces the source licence in the Windows installer (accepted on first
+install, installed as `EULA.txt`) and in the macOS/Linux archives, which now also carry `install.sh`
+so an archive downloaded from nokoo.ai installs from its own folder. `UsagePinger` in Core sends a
+daily ping with a random install id, OS, OS version, architecture, and app version, started by both
+hosts; `usagePingsEnabled` turns it off from Settings, the web interface's About page, the config
+file, or `NOKOO_USAGE_PINGS=0`. See `docs/USAGE_PINGS.md`.
+
+**Verified on macOS** (Intel, SDK `~/.dotnet` 10.0.401 through the repository scripts with
+`-p:EnableWindowsTargeting=true`): `./scripts/build.sh` 0 warnings, 0 errors; `./scripts/test.sh`
+**1345/1345**, including 6 new `UsagePingerTests` (exact field set, random persisted id, both
+opt-outs, relay failure). `scripts/check-webui.sh` clean. `tests/install-script-test.sh` passes, and
+`install.sh` run from a fake unpacked archive installed its binaries into a scratch prefix.
+
+End to end: this branch's `nokood`, started with `NOKOO_USAGE_PING_URL` pointing at a local relay
+from `feature/distribution-analytics`, sent its ping about two minutes after start; the relay
+recorded the same install id as `config.json` with `macos`, `x64`, `26.6.2`, `0.2.0-alpha.3` and
+no address. (On macOS the broker's data folder is always `~/Library/Application Support/Nokoo`;
+`XDG_DATA_HOME` does not move it, so the scratch broker's folder was removed afterwards.)
+
+**Not verified.** The Windows installer and the WPF Settings checkbox were not built or seen — they
+need Windows and `scripts/package.sh`. `scripts/publish-cross.sh` was not run, so no real archive
+with `install.sh` inside was produced. No ping has reached the hosted relay, which does not have the
+`/v1/usage/ping` route until the relay branch is deployed.

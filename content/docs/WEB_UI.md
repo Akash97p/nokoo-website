@@ -9,9 +9,9 @@ A copy of this interface runs at
 same `wwwroot` the broker serves — copied by the website repository's `scripts/sync-content.sh` — with `js/api.js` replaced by a shim that answers from invented fixtures instead of the
 API. Use it to see a page before installing; changes there live in the browser tab and nothing else.
 
-This guide describes the current development source. The tagged `v0.2.0-alpha.3` release includes
-the WebUI Insights pages, provider router, family-level effort mapping, Usage, Live quota, Dashboard,
-and native macOS per-account quota items. Features merged after that tag still require a newer source
+This guide describes the current development source. The tagged `v0.3.0-alpha.3` release includes
+the WebUI Insights pages, provider router with adaptive routing, family-level effort mapping, Usage,
+Live quota, Dashboard, native macOS per-account quota items, and the About page's usage-count switch. Features merged after that tag still require a newer source
 build until the next release.
 
 ```bash

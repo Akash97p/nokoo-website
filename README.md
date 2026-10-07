@@ -32,9 +32,20 @@ A new guide also needs an entry in `src/lib/docs.ts` to appear in navigation.
 
 ## Deploy
 
-Vercel with the Next.js preset (Node 24). Optional environment variables:
+The site is a static export served by Caddy on the same VPS as the hosted relay; Vercel is no
+longer used. From a machine with SSH access to the VPS:
 
-- `NEXT_PUBLIC_RELAY_URL` — the hosted relay the pricing page links to (default `https://nokoo.relay.kabanitech.com`);
+```bash
+NOKOO_SITE_SSH=ubuntu@51.161.152.253 ./scripts/deploy-vps.sh
+```
+
+It builds `out/`, unpacks it into a new `/srv/nokoo-website/releases/<time>-<commit>` and swaps
+`/srv/nokoo-website/current` to it in one rename, keeping five releases for rollback. Caddy's site
+block for `nokooai.kabanitech.com` lives in the relay repository's `deploy/vps/Caddyfile`.
+
+Build-time environment variables:
+
+- `NEXT_PUBLIC_RELAY_URL` — the hosted relay the account and pricing pages talk to (default `https://nokooai.relay.kabanitech.com`);
 - `NEXT_PUBLIC_BASE_PATH` — only when serving under a sub-path.
 
 ## Licence

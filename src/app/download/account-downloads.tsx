@@ -80,6 +80,9 @@ const PLATFORM = {
   linux: { label: "Linux", icon: Terminal },
 } as const;
 
+/** Platforms whose builds are not offered yet, even when one is published. */
+const COMING_SOON: ReadonlySet<Release["platform"]> = new Set(["windows"]);
+
 const ARCH: Record<string, string> = { x64: "Intel / AMD (x64)", arm64: "ARM (arm64)", universal: "Universal" };
 
 function detectTarget(): { platform: Release["platform"] | null; arch: string | null } {
@@ -136,8 +139,8 @@ function AuthForm({ onSignedIn }: { onSignedIn: (session: Session) => void }) {
     try {
       const address = email.trim();
       if (mode === "signup") {
-        // A download account has no plan to choose; Relay is added later from the Relay console.
-        await call("/v1/auth/signup", { method: "POST", body: JSON.stringify({ email: address, password, plan: "basic" }) });
+        // No plan to choose: every new account starts on a one-month Standard trial.
+        await call("/v1/auth/signup", { method: "POST", body: JSON.stringify({ email: address, password }) });
       }
       const result = await call<{ token: string; user: { email: string } }>("/v1/auth/token", {
         method: "POST",
@@ -196,7 +199,7 @@ function AuthForm({ onSignedIn }: { onSignedIn: (session: Session) => void }) {
       </Button>
       <p className="text-xs leading-5 text-muted-foreground">
         {mode === "signup"
-          ? "Free — no card, no plan. The same account signs in to Relay if you add it later."
+          ? "Free — no card. It includes one month of Relay Standard, and the same account signs in to Relay."
           : "Use the account you created here or on Relay."}
       </p>
     </form>
@@ -216,7 +219,7 @@ function Downloads({ session, onSignOut }: { session: Session; onSignOut: () => 
     call<{ releases: Release[]; latest: string[] }>("/v1/account/downloads", { token: session.token })
       .then((data) => {
         if (cancelled) return;
-        setReleases(data.releases);
+        setReleases(data.releases.filter((r) => !COMING_SOON.has(r.platform)));
         setLatest(data.latest);
       })
       .catch((e: ApiError) => {
@@ -297,6 +300,12 @@ function Downloads({ session, onSignOut }: { session: Session; onSignOut: () => 
           />
         ))}
       </div>
+
+      {releases !== null && target.platform && COMING_SOON.has(target.platform) && (
+        <p className="rounded-md border px-4 py-3 text-sm text-muted-foreground">
+          The Windows app is coming soon. The builds below are for macOS and Linux.
+        </p>
+      )}
 
       {older.length > 0 && (
         <div className="space-y-3">
